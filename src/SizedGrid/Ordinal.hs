@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
@@ -9,6 +10,7 @@ module SizedGrid.Ordinal where
 import           SizedGrid.Peano
 
 import           GHC.TypeLits
+import           System.Random
 
 data Ordinal n where
   OZ :: Ordinal (S n)
@@ -17,6 +19,16 @@ data Ordinal n where
 deriving instance Eq (Ordinal n)
 deriving instance Show (Ordinal n)
 deriving instance Ord (Ordinal n)
+
+instance SPeanoI n => Random (Ordinal (S n)) where
+    random g =
+        let xs = allOrdinal
+            (n, g') = randomR (0, length xs - 1) g
+        in (xs !! n, g')
+    randomR (mi, ma) g =
+        let xs = takeWhile (> ma) $ dropWhile (< mi) allOrdinal
+            (n,g') = randomR (0,length xs - 1) g
+        in (xs !! n, g')
 
 ordinalToNum :: Num a => Ordinal n -> a
 ordinalToNum OZ     = 0

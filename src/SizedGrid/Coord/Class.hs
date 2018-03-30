@@ -1,5 +1,6 @@
-{-# LANGUAGE DataKinds    #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module SizedGrid.Coord.Class where
 
@@ -9,9 +10,11 @@ import           SizedGrid.Peano
 import           Control.Lens
 import           GHC.TypeLits
 
-class IsCoord c where
+class (SPeanoI (NatToPeano (CoordSized c))) => IsCoord c where
   type CoordSized c :: Nat
   asOrdinal :: Iso' c (Ordinal (NatToPeano (CoordSized c)))
+  sCoordSized :: proxy c -> SPeano (NatToPeano (CoordSized c))
+  maxCoordSize :: proxy c -> Int
 
 overOrdinal ::
        IsCoord c
@@ -20,5 +23,5 @@ overOrdinal ::
     -> c
 overOrdinal func = over asOrdinal func
 
-allCoord :: (IsCoord c, NatToPeano (CoordSized c) ~ S x, SPeanoI x) => [c]
-allCoord = toListOf (traverse . re asOrdinal) allOrdinal
+allCoordLike :: (IsCoord c, NatToPeano (CoordSized c) ~ S x, SPeanoI x) => [c]
+allCoordLike = toListOf (traverse . re asOrdinal) allOrdinal

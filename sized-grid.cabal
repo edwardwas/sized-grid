@@ -16,15 +16,42 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     SizedGrid.Peano
+  exposed-modules:     
+      SizedGrid.Peano
     , SizedGrid.Ordinal
+    , SizedGrid.Coord
     , SizedGrid.Coord.Class
     , SizedGrid.Coord.Periodic
+    , SizedGrid.Grid.Class
+    , SizedGrid.Grid.Grid
+    , SizedGrid.Grid.Focused
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.11
     , lens
     , vector
     , vector-space
+    , generics-sop
+    , newtype-generics
+    , distributive
+    , adjunctions
+    , comonad
+    , random
+    , mtl
   hs-source-dirs:      src
   default-language:    Haskell2010
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs:    tests
+  other-modules:       
+      Test.Utils
+  default-language:    Haskell2010
+  build-depends:       base >=4.8 && <4.12
+    , sized-grid
+    , hedgehog
+    , tasty
+    , tasty-hedgehog
+    , vector-space
+  ghc-options: -O0

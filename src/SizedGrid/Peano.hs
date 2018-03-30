@@ -19,7 +19,7 @@ data SPeano (n :: Peano) where
   SZ :: SPeano Z
   SS :: SPeanoI n => SPeano n -> SPeano (S n)
 
-type family NatToPeano (n :: Nat) :: Peano where
+type family NatToPeano (n :: Nat) = (x :: Peano) where
   NatToPeano 0 = Z
   NatToPeano n = S (NatToPeano (n - 1))
 

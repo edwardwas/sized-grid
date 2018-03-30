@@ -1,8 +1,10 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module SizedGrid.Coord.Periodic where
 
@@ -17,14 +19,21 @@ import           Data.Maybe            (fromJust)
 import           Data.Proxy
 import           Data.Semigroup
 import           GHC.TypeLits
+import           System.Random
 
 newtype Periodic n = Periodic
     { unPeriodic :: Ordinal (NatToPeano n)
     } deriving (Eq,Show,Ord)
 
-instance IsCoord (Periodic n) where
+instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n) where
+  randomR (Periodic mi, Periodic ma) = over _1 Periodic . randomR (mi, ma)
+  random = over _1 Periodic . random
+
+instance (SPeanoI (NatToPeano n), KnownNat n) => IsCoord (Periodic n) where
   type CoordSized (Periodic n) = n
   asOrdinal = iso unPeriodic Periodic
+  sCoordSized _ = sPeano
+  maxCoordSize _ = fromIntegral $ natVal (Proxy :: Proxy n)
 
 instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
          Semigroup (Periodic n) where
