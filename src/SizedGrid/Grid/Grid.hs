@@ -21,6 +21,7 @@ import           SizedGrid.Peano
 import           SizedGrid.Coord.Periodic
 
 import           Control.Lens             hiding (index)
+import           Control.Monad.State
 import           Data.AffineSpace
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -29,6 +30,7 @@ import           Data.Semigroup           (Semigroup (..))
 import qualified Data.Vector              as V
 import           Generics.SOP
 import qualified GHC.TypeLits             as GHC
+import           System.Random
 
 
 data Grid (cs :: [*]) a = Grid
