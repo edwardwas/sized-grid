@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -25,9 +26,9 @@ newtype Periodic n = Periodic
     { unPeriodic :: Ordinal (NatToPeano n)
     } deriving (Eq,Show,Ord)
 
-instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n) where
-  randomR (Periodic mi, Periodic ma) = over _1 Periodic . randomR (mi, ma)
-  random = over _1 Periodic . random
+deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Enum (Periodic n)
+deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Bounded (Periodic n)
+deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
 
 instance (SPeanoI (NatToPeano n), KnownNat n) => IsCoord (Periodic n) where
   type CoordSized (Periodic n) = n
