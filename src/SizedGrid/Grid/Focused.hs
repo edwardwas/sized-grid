@@ -10,7 +10,6 @@ module SizedGrid.Grid.Focused where
 
 import           SizedGrid.Coord
 import           SizedGrid.Coord.Class
-import           SizedGrid.Grid.Class
 import           SizedGrid.Grid.Grid
 
 import           Control.Comonad
@@ -37,8 +36,3 @@ instance (All IsCoord cs, All Monoid cs, All Semigroup cs, SListI cs) =>
     seek p (FocusedGrid g _) = FocusedGrid g p
     seeks func (FocusedGrid g p) = FocusedGrid g $ func p
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
-         IsGrid cs (FocusedGrid cs) where
-    gridIndex c =
-        (\f (FocusedGrid g p) -> (\g' -> FocusedGrid g' p) <$> f g) .
-        gridIndex c

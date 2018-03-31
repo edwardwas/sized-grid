@@ -14,7 +14,6 @@ module SizedGrid.Grid.Grid where
 
 import           SizedGrid.Coord
 import           SizedGrid.Coord.Class
-import           SizedGrid.Grid.Class
 import           SizedGrid.Ordinal
 import           SizedGrid.Peano
 
@@ -67,9 +66,3 @@ instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
     itraverse func (Grid v) =
         Grid <$> sequenceA (V.zipWith func (V.fromList allCoord) v)
 
-instance (All Semigroup cs, All Monoid cs, All IsCoord cs) =>
-         IsGrid cs (Grid cs) where
-    gridIndex coord =
-        lens
-            (\g -> index g coord)
-            (\(Grid v) a -> Grid (v & ix (coordPosition coord) .~ a))
