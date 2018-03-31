@@ -27,7 +27,6 @@ newtype Periodic n = Periodic
     } deriving (Eq,Show,Ord)
 
 deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Enum (Periodic n)
-deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Bounded (Periodic n)
 deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
 
 instance (SPeanoI (NatToPeano n), KnownNat n) => IsCoord (Periodic n) where
