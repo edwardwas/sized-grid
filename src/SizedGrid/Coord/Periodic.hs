@@ -26,8 +26,11 @@ newtype Periodic n = Periodic
     { unPeriodic :: Ordinal (NatToPeano n)
     } deriving (Eq,Show,Ord)
 
-deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Enum (Periodic n)
 deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
+
+instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) => Enum (Periodic n) where
+  toEnum x = Periodic $ fromJust $ numToOrdinal $ x `mod` (fromIntegral $ natVal (Proxy :: Proxy n))
+  fromEnum (Periodic o) = ordinalToNum o
 
 instance (SPeanoI (NatToPeano n), KnownNat n) => IsCoord (Periodic n) where
   type CoordSized (Periodic n) = n
