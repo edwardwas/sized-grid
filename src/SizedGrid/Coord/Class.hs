@@ -24,4 +24,4 @@ overOrdinal ::
 overOrdinal func = over asOrdinal func
 
 allCoordLike :: (IsCoord c, NatToPeano (CoordSized c) ~ S x, SPeanoI x) => [c]
-allCoordLike = toListOf (traverse . re asOrdinal) allOrdinal
+allCoordLike = toListOf (traverse . re asOrdinal) [minBound .. maxBound]

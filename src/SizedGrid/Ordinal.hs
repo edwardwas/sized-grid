@@ -9,6 +9,7 @@ module SizedGrid.Ordinal where
 
 import           SizedGrid.Peano
 
+import           Data.Maybe      (fromJust)
 import           GHC.TypeLits
 import           System.Random
 
@@ -20,13 +21,31 @@ deriving instance Eq (Ordinal n)
 deriving instance Show (Ordinal n)
 deriving instance Ord (Ordinal n)
 
+maxOrdinal :: forall n . SPeanoI n => Ordinal (S n)
+maxOrdinal = case (sPeano :: SPeano n) of
+  SZ   -> OZ
+  SS n -> OS maxOrdinal
+
+instance SPeanoI n => Bounded (Ordinal (S n)) where
+  minBound = OZ
+  maxBound = maxOrdinal
+
+instance SPeanoI n => Enum (Ordinal (S n)) where
+  toEnum = fromJust . numToOrdinal
+  fromEnum = ordinalToNum
+  pred (OS n) = weakenOrdinal n
+  pred OZ     = error "Pred on OZ"
+  succ n = case strengthenOrdinal (OS n) of
+      Just x  -> x
+      Nothing -> error "Succ on maxOrdinal"
+
 instance SPeanoI n => Random (Ordinal (S n)) where
     random g =
-        let xs = allOrdinal
+        let xs = [minBound .. maxBound]
             (n, g') = randomR (0, length xs - 1) g
         in (xs !! n, g')
     randomR (mi, ma) g =
-        let xs = takeWhile (> ma) $ dropWhile (< mi) allOrdinal
+        let xs = [mi .. ma]
             (n,g') = randomR (0,length xs - 1) g
         in (xs !! n, g')
 
@@ -57,9 +76,3 @@ strengthenOrdinal OZ =
 strengthenOrdinal (OS n) = case (sPeano :: SPeano n) of
       SZ   -> Nothing
       SS _ -> OS <$> strengthenOrdinal n
-
-allOrdinal :: forall n x . (SPeanoI n, n ~ S x) => [Ordinal n]
-allOrdinal = let helper n = case strengthenOrdinal $ OS n of
-                    Nothing -> [n]
-                    Just n' -> n : helper n'
-             in helper OZ
