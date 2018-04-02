@@ -45,12 +45,12 @@ instance (IsTypeNum k, SPeanoI (AsPeano n)) => IsCoord (Periodic (n :: k)) where
     type CoordSized (Periodic n) = AsPeano n
     asOrdinal = iso unPeriodic Periodic
     sCoordSized _ = sPeano
-    maxCoordSize = demoteSPeano . sCoordSized
+    maxCoordSize p = demoteSPeano (sCoordSized p) - 1
 
 instance (AsPeano n ~ S x, IsTypeNum k, SPeanoI x) =>
          Semigroup (Periodic (n :: k)) where
     Periodic a <> Periodic b =
-        let n = maxCoordSize (Proxy :: Proxy (Periodic n))
+        let n = maxCoordSize (Proxy :: Proxy (Periodic n)) + 1
         in Periodic $
            fromJust $ numToOrdinal ((ordinalToNum a + ordinalToNum b) `mod` n)
 
@@ -59,24 +59,20 @@ instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
     mappend = (<>)
     mempty = Periodic $ fromJust $ numToOrdinal 0
 
--- TODO Change this so that we don't go via Int
 instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
          AdditiveGroup (Periodic (n :: k)) where
     zeroV = mempty
     (^+^) = (<>)
     negateV (Periodic o) =
-        Periodic $
-        fromJust $
-        numToOrdinal $
-        (negate (ordinalToNum o) :: Int) `mod`
-        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)))
+        let n = fromIntegral (maxCoordSize (Proxy @ (Periodic n))) + 1
+        in Periodic $ fromJust $ numToOrdinal (negate (ordinalToNum o) `mod` n)
 
 instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
          AffineSpace (Periodic (n :: k)) where
     type Diff (Periodic n) = Integer
     Periodic a .-. Periodic b =
         (ordinalToNum a - ordinalToNum b) `mod`
-        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)))
+        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)) + 1)
     Periodic a .+^ b =
         Periodic $
         fromJust $

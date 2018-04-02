@@ -62,7 +62,8 @@ instance Num Peano where
     x * Z = Z
     Z * x = Z
     a * S b = a + (a * b)
-    negate = error "Cannot negate Peano"
+    negate Z = Z
+    negate _ = error "Cannot negate Peano"
     abs = id
     signum _ = S Z
     fromInteger x
@@ -102,3 +103,5 @@ instance Integral Peano where
         in helper 0 x
     toInteger Z     = 0
     toInteger (S n) = 1 + toInteger n
+    divMod = quotRem
+
