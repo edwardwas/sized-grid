@@ -146,7 +146,7 @@ moorePoints n (Coord cs) =
   let helper :: (All AffineSpace xs, AllDiffSame a xs) => NP I xs -> [NP I xs]
       helper Nil = [Nil]
       helper (I a :* as) = do
-        delta <- [-n .. n]
+        delta :: a <- [-n .. n]
         next <- helper as
         return (I (a .+^ delta) :* next)
   in map Coord $ helper cs
@@ -168,10 +168,12 @@ vonNeumanPoints ::
   -> Coord cs
   -> [Coord cs]
 vonNeumanPoints n c =
-  let helper :: Coord cs -> Bool
-      helper new =
-        sum
-          (hcollapse $
-           hcmap (Proxy :: Proxy Integral) (\(I a) -> K (abs $ fromIntegral a)) $ from (min (new .-. c) (c .-. new))) <=
-        n
-  in filter helper $ moorePoints n c
+    let helper :: Coord cs -> Bool
+        helper new =
+            sum
+                (hcollapse $
+                 hcmap
+                     (Proxy :: Proxy Integral)
+                     (\(I a) -> K (abs $ fromIntegral a)) $
+                 from (min (new .-. c) (c .-. new))) <= n
+    in filter helper $ moorePoints n c

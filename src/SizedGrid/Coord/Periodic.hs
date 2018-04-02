@@ -77,5 +77,5 @@ instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
         Periodic $
         fromJust $
         numToOrdinal $
-        (ordinalToNum a + fromIntegral b) `mod`
-        (maxCoordSize (Proxy @(Periodic n)))
+        (fromIntegral (ordinalToNum a) + b) `mod`
+        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)) - 1)

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -16,6 +17,8 @@ import           Control.Comonad
 import           Control.Comonad.Store
 import           Control.Lens
 import           Control.Monad.State
+import           Data.AdditiveGroup
+import           Generics.SOP
 import           System.Random
 
 data Spin = Up | Down deriving (Eq,Show,Enum,Bounded)
@@ -53,12 +56,12 @@ data PhysicalOptions = PhysicalOptions
 
 singleEnergy :: PhysicalOptions -> FocusedGrid GridType Spin -> Double
 singleEnergy PhysicalOptions {..} fg =
-  let neigh = filter (/= (pos fg)) $ vonNeumanPoints 1 (pos fg)
-  in (-magneticMoment) * (spinNumber $ extract fg) -
-     sum
-       (map
-          (\p -> coupling * spinNumber (extract fg) * spinNumber (peek p fg))
-          neigh)
+    let neigh = filter (/= (pos fg)) $ vonNeumanPoints 1 (pos fg)
+    in (-magneticMoment) * (spinNumber $ extract fg) -
+       sum
+           (map (\p ->
+                     coupling * spinNumber (extract fg) * spinNumber (peek p fg))
+                neigh)
 
 totalEnergy :: PhysicalOptions -> FocusedGrid GridType Spin -> Double
 totalEnergy po = sum . extend (singleEnergy po)
@@ -70,4 +73,4 @@ startEnergyMean po n =
   mean . map (totalEnergy po . view asFocusedGrid . fst) . take n . randomGrids
 
 main :: IO ()
-main = newStdGen >>= print . startEnergyMean (PhysicalOptions 1 0) 1000
+main = newStdGen >>= print . startEnergyMean (PhysicalOptions 1 0) 1
