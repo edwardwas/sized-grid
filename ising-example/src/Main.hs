@@ -2,8 +2,10 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
 module Main where
@@ -13,14 +15,18 @@ import           SizedGrid.Coord.Periodic
 import           SizedGrid.Grid.Class
 import           SizedGrid.Grid.Focused
 import           SizedGrid.Grid.Grid
+import           SizedGrid.Peano
 import           SizedGrid.Type.Number
 
 import           Control.Comonad
 import           Control.Comonad.Store
 import           Control.Lens
-import           Control.Monad.State
+import           Control.Monad.Random
 import           Data.AdditiveGroup
 import           Generics.SOP
+import qualified GHC.TypeLits             as GHC
+import           Pipes
+import qualified Pipes.Prelude            as P
 import           System.Random
 
 data Spin = Up | Down deriving (Eq,Show,Enum,Bounded)
@@ -31,6 +37,10 @@ flipSpin Down = Up
 spinNumber :: Num a => Spin -> a
 spinNumber Up   = 1
 spinNumber Down = -1
+
+data PhysicalOptions = PhysicalOptions
+  { coupling :: Double
+  } deriving (Eq, Show)
 
 instance Random Spin where
   random g =
@@ -46,78 +56,69 @@ instance Random Spin where
          then (Up, g')
          else (Down, g')
 
-type GridType = '[Periodic (AsPeano 17), Periodic (AsPeano 10)]
+type GridType = '[Periodic (AsPeano 20), Periodic (AsPeano 20)]
 
-randomGrid :: RandomGen g => g -> (Grid GridType Spin, g)
-randomGrid g = runState (sequenceA $ pure $ state random) g
+gridSize = demoteSPeano (sPeano :: SPeano (MaxCoordSize GridType))
 
-randomGrids :: RandomGen g => g -> [(Grid GridType Spin, g)]
-randomGrids startG = tail $ iterate (\(_,g) -> randomGrid g) (undefined,startG)
-
-data PhysicalOptions = PhysicalOptions
-  { coupling       :: Double
-  , magneticMoment :: Double
-  } deriving (Eq, Show)
+randomGrid ::
+     (GHC.KnownNat (PeanoToNat (MaxCoordSize cs)), MonadRandom m)
+  => m (Grid cs Spin)
+randomGrid = sequence $ pure $ getRandom
 
 singleEnergy :: PhysicalOptions -> FocusedGrid GridType Spin -> Double
 singleEnergy PhysicalOptions {..} fg =
-    let neigh = filter (/= (pos fg)) $ vonNeumanPoints 1 (pos fg)
-    in (-magneticMoment) * (spinNumber $ extract fg) -
-       sum
-           (map (\p ->
-                     coupling * spinNumber (extract fg) * spinNumber (peek p fg))
-                neigh)
+  -0.5 * coupling *
+  sum
+    (map (\p -> spinNumber (peek p fg) * spinNumber (extract fg)) $
+     filter (/= (pos fg)) $ vonNeumanPoints 1 (pos fg))
 
-totalEnergy :: PhysicalOptions -> FocusedGrid GridType Spin -> Double
-totalEnergy po = sum . extend (singleEnergy po)
+totalEnergy ::
+     IsGrid GridType (grid GridType)
+  => PhysicalOptions
+  -> grid GridType Spin
+  -> Double
+totalEnergy po = sum . extend (singleEnergy po) . view asFocusedGrid
 
-mean :: (Fractional a, Foldable t) => t a -> a
-mean xs = sum xs / fromIntegral (length xs)
+energyAtPoint ::
+     IsGrid GridType (grid GridType)
+  => PhysicalOptions
+  -> grid GridType Spin
+  -> Coord GridType
+  -> Double
+energyAtPoint po g pos = singleEnergy po $ seek pos $ g ^. asFocusedGrid
 
-startEnergyMean po n =
-  mean . map (totalEnergy po . view asFocusedGrid . fst) . take n . randomGrids
+attempFlip ::
+     (IsGrid GridType (grid GridType), MonadRandom m)
+  => PhysicalOptions
+  -> grid GridType Spin
+  -> Coord GridType
+  -> m (grid GridType Spin)
+attempFlip po start pos = do
+  let startEnergy = energyAtPoint po start pos
+      newGrid = start & gridIndex pos %~ flipSpin
+      newEnergy = energyAtPoint po newGrid pos
+      acceptProb = min 1 $ exp (startEnergy - newEnergy)
+  a :: Double <- getRandom
+  return
+    (if newEnergy >= startEnergy && a >= acceptProb
+       then start
+       else newGrid)
 
-performFlip ::
-       RandomGen g
-    => PhysicalOptions
-    -> FocusedGrid GridType Spin
-    -> Coord GridType
-    -> g
-    -> (FocusedGrid GridType Spin, g)
-performFlip po fg pos g =
-    let oldEnergy = singleEnergy po $ seek pos fg
-        newGrid = fg & gridIndex pos %~ flipSpin
-        newEnergy = singleEnergy po $ seek pos newGrid
-        acceptanceProb = exp (oldEnergy - newEnergy)
-        (a :: Double, g') = random g
-    in if newEnergy > oldEnergy && a <= acceptanceProb
-           then (newGrid, g')
-           else (fg, g')
+runSimulation ::
+     forall m. MonadRandom m
+  => PhysicalOptions
+  -> Int
+  -> Producer' (Grid GridType Spin) m ()
+runSimulation po n =
+  P.replicateM (n * fromIntegral gridSize) (getRandom :: m (Coord GridType)) >->
+  P.scanM (attempFlip po) randomGrid pure >-> takeOneIn 100
 
-doSimulation ::
-       (MonadState g m, RandomGen g)
-    => PhysicalOptions
-    -> Int
-    -> FocusedGrid GridType Spin
-    -> m (FocusedGrid GridType Spin)
-doSimulation po n startGrid = do
-    g <- get
-    let (g1, g2) = split g
-        ps :: [Coord GridType] = take n $ randoms g1
-    put g2
-    foldM (\p fg -> state (performFlip po p fg)) startGrid ps
+takeOneIn :: Monad m => Int -> Pipe a a m ()
+takeOneIn n = forever $ do
+  a <- await
+  _ <- replicateM (n - 1) await
+  yield a
 
-
-main :: IO ()
-main = do
-    putStrLn "Lets go"
-    g <- newStdGen
-    let po = PhysicalOptions 1 0
-        (startGrid, g') = randomGrid g
-        (endGrid, g'') =
-            over _1 (view asGrid) $
-            runState (doSimulation po (floor $ 1e4) $ view asFocusedGrid startGrid) g'
-    putStrLn $
-        "Start energy: " ++ show (totalEnergy po $ startGrid ^. asFocusedGrid)
-    putStrLn $
-        "End energy: " ++ show (totalEnergy po $ endGrid ^. asFocusedGrid)
+main =
+  let po = PhysicalOptions 10
+  in P.toListM $ runSimulation po 10 >-> P.map (totalEnergy po)
