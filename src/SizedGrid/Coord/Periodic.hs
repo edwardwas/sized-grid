@@ -32,7 +32,7 @@ newtype Periodic (n :: Peano) = Periodic
 
 deriving instance (n ~ (S x), SPeanoI x) => Random (Periodic n)
 
-instance (n ~ (S x), SPeanoI x) => Enum (Periodic (n)) where
+instance (n ~ (S x), SPeanoI x) => Enum (Periodic n) where
     toEnum x =
         Periodic $
         fromJust $

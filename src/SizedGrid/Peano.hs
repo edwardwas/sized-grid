@@ -72,7 +72,7 @@ instance Num Peano where
         | x > 0 = S (fromInteger (x - 1))
 
 type family PeanoAddition (a :: Peano) (b :: Peano) :: Peano where
-  PeanoAddition (S n) x = PeanoAddition n (S x)
+  PeanoAddition (S n) x = S (PeanoAddition n x)
   PeanoAddition Z x = x
 
 type family PeanoMultiplication (a :: Peano) (b :: Peano) :: Peano where

@@ -121,9 +121,9 @@ allCoord =
                     return (I c :* cs)
     in map Coord $ helper $ unCoord mempty
 
-type family MaxCoordSize (cs :: [k]) :: Peano  where
+type family MaxCoordSize (cs :: [k]) :: GHC.Nat where
   MaxCoordSize '[] = One
-  MaxCoordSize (c ': cs) = Multiply (AsPeano (CoordSized c)) (MaxCoordSize cs)
+  MaxCoordSize (c ': cs) = Multiply (AsNat (CoordSized c)) (MaxCoordSize cs)
 
 coordPosition :: (All IsCoord cs) => Coord cs -> Int
 coordPosition (Coord a) =

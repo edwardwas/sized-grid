@@ -23,9 +23,10 @@ import           Control.Comonad.Store
 import           Control.Lens
 import           Control.Monad.Random
 import           Data.AdditiveGroup
-import           Generics.SOP
+import           Data.Proxy
+import           Generics.SOP             hiding (Proxy (..))
 import qualified GHC.TypeLits             as GHC
-import           Pipes
+import           Pipes                    hiding (Proxy (..))
 import qualified Pipes.Prelude            as P
 import           System.Random
 
@@ -56,12 +57,12 @@ instance Random Spin where
          then (Up, g')
          else (Down, g')
 
-type GridType = '[Periodic (AsPeano 20), Periodic (AsPeano 20)]
+type GridType = '[Periodic (AsPeano 40), Periodic (AsPeano 40)]
 
-gridSize = demoteSPeano (sPeano :: SPeano (MaxCoordSize GridType))
+gridSize = GHC.natVal (Proxy :: Proxy (MaxCoordSize GridType))
 
 randomGrid ::
-     (GHC.KnownNat (PeanoToNat (MaxCoordSize cs)), MonadRandom m)
+     (GHC.KnownNat (MaxCoordSize cs), MonadRandom m)
   => m (Grid cs Spin)
 randomGrid = sequence $ pure $ getRandom
 
@@ -121,4 +122,4 @@ takeOneIn n = forever $ do
 
 main =
   let po = PhysicalOptions 10
-  in P.toListM $ runSimulation po 10 >-> P.map (totalEnergy po)
+  in runEffect (runSimulation po 10 >-> P.map (totalEnergy po) >-> P.print)
