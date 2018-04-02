@@ -13,6 +13,7 @@ import           SizedGrid.Coord.Periodic
 import           SizedGrid.Grid.Class
 import           SizedGrid.Grid.Focused
 import           SizedGrid.Grid.Grid
+import           SizedGrid.Type.Number
 
 import           Control.Comonad
 import           Control.Comonad.Store
@@ -45,7 +46,7 @@ instance Random Spin where
          then (Up, g')
          else (Down, g')
 
-type GridType = '[Periodic 10, Periodic 10]
+type GridType = '[Periodic (AsPeano 17), Periodic (AsPeano 10)]
 
 randomGrid :: RandomGen g => g -> (Grid GridType Spin, g)
 randomGrid g = runState (sequenceA $ pure $ state random) g

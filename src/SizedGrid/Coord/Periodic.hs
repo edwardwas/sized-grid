@@ -26,14 +26,13 @@ import           Data.Semigroup
 import           GHC.TypeLits
 import           System.Random
 
-newtype Periodic (n :: k) = Periodic
-    { unPeriodic :: Ordinal (AsPeano n)
+newtype Periodic (n :: Peano) = Periodic
+    { unPeriodic :: Ordinal n
     } deriving (Eq,Show,Ord)
 
-deriving instance (AsPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
+deriving instance (n ~ (S x), SPeanoI x) => Random (Periodic n)
 
-instance (IsTypeNum k, AsPeano n ~ (S x), SPeanoI x) =>
-         Enum (Periodic (n :: k)) where
+instance (n ~ (S x), SPeanoI x) => Enum (Periodic (n)) where
     toEnum x =
         Periodic $
         fromJust $
@@ -41,34 +40,30 @@ instance (IsTypeNum k, AsPeano n ~ (S x), SPeanoI x) =>
         (fromIntegral x) `mod` (maxCoordSize (Proxy @(Periodic n)))
     fromEnum (Periodic o) = ordinalToNum o
 
-instance (IsTypeNum k, SPeanoI (AsPeano n)) => IsCoord (Periodic (n :: k)) where
-    type CoordSized (Periodic n) = AsPeano n
+instance (SPeanoI n) => IsCoord (Periodic n) where
+    type CoordSized (Periodic n) = n
     asOrdinal = iso unPeriodic Periodic
     sCoordSized _ = sPeano
     maxCoordSize p = demoteSPeano (sCoordSized p) - 1
 
-instance (AsPeano n ~ S x, IsTypeNum k, SPeanoI x) =>
-         Semigroup (Periodic (n :: k)) where
+instance (n ~ S x, SPeanoI x) => Semigroup (Periodic n) where
     Periodic a <> Periodic b =
         let n = maxCoordSize (Proxy :: Proxy (Periodic n)) + 1
         in Periodic $
            fromJust $ numToOrdinal ((ordinalToNum a + ordinalToNum b) `mod` n)
 
-instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
-         Monoid (Periodic (n :: k)) where
+instance (n ~ (S x), SPeanoI x) => Monoid (Periodic n) where
     mappend = (<>)
-    mempty = Periodic $ fromJust $ numToOrdinal 0
+    mempty = Periodic OZ
 
-instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
-         AdditiveGroup (Periodic (n :: k)) where
+instance (n ~ (S x), SPeanoI x) => AdditiveGroup (Periodic n) where
     zeroV = mempty
     (^+^) = (<>)
     negateV (Periodic o) =
-        let n = fromIntegral (maxCoordSize (Proxy @ (Periodic n))) + 1
+        let n = fromIntegral (maxCoordSize (Proxy @(Periodic n))) + 1
         in Periodic $ fromJust $ numToOrdinal (negate (ordinalToNum o) `mod` n)
 
-instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
-         AffineSpace (Periodic (n :: k)) where
+instance (n ~ (S x), SPeanoI x) => AffineSpace (Periodic n) where
     type Diff (Periodic n) = Integer
     Periodic a .-. Periodic b =
         (ordinalToNum a - ordinalToNum b) `mod`
