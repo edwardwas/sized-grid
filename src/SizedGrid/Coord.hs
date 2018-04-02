@@ -16,6 +16,7 @@ module SizedGrid.Coord where
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
 import           SizedGrid.Peano
+import           SizedGrid.Type.Number
 
 import           Control.Applicative      (liftA2)
 import           Control.Lens             ((^.), _1)
@@ -120,16 +121,16 @@ allCoord =
                     return (I c :* cs)
     in map Coord $ helper $ unCoord mempty
 
-type family MaxCoordSize cs where
-  MaxCoordSize '[] = 1
-  MaxCoordSize (c ': cs) = CoordSized c GHC.* MaxCoordSize cs
+type family MaxCoordSize (cs :: [k]) :: Peano  where
+  MaxCoordSize '[] = One
+  MaxCoordSize (c ': cs) = Multiply (AsPeano (CoordSized c)) (MaxCoordSize cs)
 
 coordPosition :: (All IsCoord cs) => Coord cs -> Int
 coordPosition (Coord a) =
     let helper :: (All IsCoord xs) => NP I xs -> Int
         helper (Nil) = 0
         helper (I c :* (cs :: NP I ys)) =
-            ordinalToNum (c ^. asOrdinal) + ((maxCoordSize $ I c) * helper cs)
+            ordinalToNum (c ^. asOrdinal) + ((fromIntegral $ maxCoordSize $ I c) * helper cs)
     in (helper a)
 
 type family AllDiffSame a xs :: Constraint where

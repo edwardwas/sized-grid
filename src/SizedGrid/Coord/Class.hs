@@ -6,22 +6,23 @@ module SizedGrid.Coord.Class where
 
 import           SizedGrid.Ordinal
 import           SizedGrid.Peano
+import           SizedGrid.Type.Number
 
 import           Control.Lens
 import           GHC.TypeLits
 
-class (SPeanoI (NatToPeano (CoordSized c))) => IsCoord c where
-  type CoordSized c :: Nat
-  asOrdinal :: Iso' c (Ordinal (NatToPeano (CoordSized c)))
-  sCoordSized :: proxy c -> SPeano (NatToPeano (CoordSized c))
-  maxCoordSize :: proxy c -> Int
+class IsCoord c where
+  type CoordSized c :: Peano
+  asOrdinal :: Iso' c (Ordinal (CoordSized c))
+  sCoordSized :: proxy c -> SPeano (CoordSized c)
+  maxCoordSize :: proxy c -> Peano
 
 overOrdinal ::
        IsCoord c
-    => (Ordinal (NatToPeano (CoordSized c)) -> Ordinal (NatToPeano (CoordSized c)))
+    => (Ordinal (AsPeano (CoordSized c)) -> Ordinal (AsPeano (CoordSized c)))
     -> c
     -> c
 overOrdinal func = over asOrdinal func
 
-allCoordLike :: (IsCoord c, NatToPeano (CoordSized c) ~ S x, SPeanoI x) => [c]
+allCoordLike :: (IsCoord c, AsPeano (CoordSized c) ~ S x, SPeanoI x) => [c]
 allCoordLike = toListOf (traverse . re asOrdinal) [minBound .. maxBound]

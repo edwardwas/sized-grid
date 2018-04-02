@@ -18,6 +18,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     
       SizedGrid.Peano
+    , SizedGrid.Type.Number
     , SizedGrid.Ordinal
     , SizedGrid.Coord
     , SizedGrid.Coord.Class

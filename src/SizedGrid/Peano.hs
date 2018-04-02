@@ -70,6 +70,15 @@ instance Num Peano where
         | x == 0 = Z
         | x > 0 = S (fromInteger (x - 1))
 
+type family PeanoAddition (a :: Peano) (b :: Peano) :: Peano where
+  PeanoAddition (S n) x = PeanoAddition n (S x)
+  PeanoAddition Z x = x
+
+type family PeanoMultiplication (a :: Peano) (b :: Peano) :: Peano where
+  PeanoMultiplication Z _ = Z
+  PeanoMultiplication _ Z = Z
+  PeanoMultiplication a (S b) = PeanoAddition a (PeanoMultiplication a b)
+
 instance Real Peano where
   toRational Z     = 0
   toRational (S n) = 1 + toRational n

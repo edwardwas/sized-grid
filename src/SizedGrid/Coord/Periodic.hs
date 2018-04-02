@@ -2,9 +2,12 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
 module SizedGrid.Coord.Periodic where
@@ -12,6 +15,7 @@ module SizedGrid.Coord.Periodic where
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
 import           SizedGrid.Peano
+import           SizedGrid.Type.Number
 
 import           Control.Lens
 import           Data.AdditiveGroup
@@ -22,53 +26,60 @@ import           Data.Semigroup
 import           GHC.TypeLits
 import           System.Random
 
-newtype Periodic n = Periodic
-    { unPeriodic :: Ordinal (NatToPeano n)
+newtype Periodic (n :: k) = Periodic
+    { unPeriodic :: Ordinal (AsPeano n)
     } deriving (Eq,Show,Ord)
 
-deriving instance (NatToPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
+deriving instance (AsPeano n ~ (S x), SPeanoI x) => Random (Periodic n)
 
-instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
-         Enum (Periodic n) where
-  toEnum x =
-    Periodic $
-    fromJust $ numToOrdinal $ x `mod` (fromIntegral $ natVal (Proxy :: Proxy n))
-  fromEnum (Periodic o) = ordinalToNum o
+instance (IsTypeNum k, AsPeano n ~ (S x), SPeanoI x) =>
+         Enum (Periodic (n :: k)) where
+    toEnum x =
+        Periodic $
+        fromJust $
+        numToOrdinal $
+        (fromIntegral x) `mod` (maxCoordSize (Proxy @(Periodic n)))
+    fromEnum (Periodic o) = ordinalToNum o
 
-instance (SPeanoI (NatToPeano n), KnownNat n) => IsCoord (Periodic n) where
-  type CoordSized (Periodic n) = n
-  asOrdinal = iso unPeriodic Periodic
-  sCoordSized _ = sPeano
-  maxCoordSize _ = fromIntegral $ natVal (Proxy :: Proxy n)
+instance (IsTypeNum k, SPeanoI (AsPeano n)) => IsCoord (Periodic (n :: k)) where
+    type CoordSized (Periodic n) = AsPeano n
+    asOrdinal = iso unPeriodic Periodic
+    sCoordSized _ = sPeano
+    maxCoordSize = demoteSPeano . sCoordSized
 
-instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
-         Semigroup (Periodic n) where
+instance (AsPeano n ~ S x, IsTypeNum k, SPeanoI x) =>
+         Semigroup (Periodic (n :: k)) where
     Periodic a <> Periodic b =
-        let n = natVal (Proxy :: Proxy n)
+        let n = maxCoordSize (Proxy :: Proxy (Periodic n))
         in Periodic $
            fromJust $ numToOrdinal ((ordinalToNum a + ordinalToNum b) `mod` n)
 
-instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
-         Monoid (Periodic n) where
+instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
+         Monoid (Periodic (n :: k)) where
     mappend = (<>)
     mempty = Periodic $ fromJust $ numToOrdinal 0
 
-instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
-         AdditiveGroup (Periodic n) where
+-- TODO Change this so that we don't go via Int
+instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
+         AdditiveGroup (Periodic (n :: k)) where
     zeroV = mempty
     (^+^) = (<>)
     negateV (Periodic o) =
         Periodic $
         fromJust $
         numToOrdinal $
-        (negate $ ordinalToNum o) `mod` (natVal (Proxy :: Proxy n))
+        (negate (ordinalToNum o) :: Int) `mod`
+        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)))
 
-instance (NatToPeano n ~ (S x), SPeanoI x, KnownNat n) =>
-         AffineSpace (Periodic n) where
+instance (AsPeano n ~ (S x), SPeanoI x, IsTypeNum k) =>
+         AffineSpace (Periodic (n :: k)) where
     type Diff (Periodic n) = Integer
     Periodic a .-. Periodic b =
-        (ordinalToNum a - ordinalToNum b) `mod` (natVal (Proxy :: Proxy n))
+        (ordinalToNum a - ordinalToNum b) `mod`
+        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)))
     Periodic a .+^ b =
         Periodic $
         fromJust $
-        numToOrdinal $ (ordinalToNum a + b) `mod` (natVal (Proxy :: Proxy n))
+        numToOrdinal $
+        (ordinalToNum a + fromIntegral b) `mod`
+        (maxCoordSize (Proxy @(Periodic n)))

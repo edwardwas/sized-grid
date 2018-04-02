@@ -16,6 +16,7 @@ import           SizedGrid.Coord
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
 import           SizedGrid.Peano
+import           SizedGrid.Type.Number
 
 import           SizedGrid.Coord.Periodic
 
@@ -36,11 +37,11 @@ data Grid (cs :: [*]) a = Grid
     { unGrid :: V.Vector a
     } deriving (Eq, Show, Functor, Foldable, Traversable)
 
-instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
+instance GHC.KnownNat (AsNat (MaxCoordSize cs)) => Applicative (Grid cs) where
     pure =
         Grid .
         V.replicate
-            (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
+            (fromIntegral $ GHC.natVal (Proxy :: Proxy (AsNat (MaxCoordSize cs))))
     Grid fs <*> Grid as = Grid $ V.zipWith ($) fs as
 
 instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
