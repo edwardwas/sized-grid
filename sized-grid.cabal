@@ -56,4 +56,6 @@ test-suite tests
     , tasty
     , tasty-hedgehog
     , vector-space
+    , generics-sop
+    , lens
   ghc-options: -O0

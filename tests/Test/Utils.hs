@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Test.Utils where
 
 import           Data.AdditiveGroup
@@ -70,10 +72,17 @@ additiveGroupLaws gen =
        , testProperty "a - (a - b) = b" takeLeaves
        ]
 
-affineSpaceLaws :: (Show a, Eq a, AffineSpace a) => Gen a -> TestTree
+affineSpaceLaws ::
+       (Show a, Eq a, AffineSpace a, Eq (Diff a), Show (Diff a))
+    => Gen a
+    -> TestTree
 affineSpaceLaws gen =
     let addZero =
             property $ do
                 a <- forAll gen
                 a === a .+^ zeroV
+        takeSelf =
+            property $ do
+                a <- forAll gen
+                a .-. a === zeroV
     in testGroup "AffineSpace Laws" [testProperty "Add Zero" addZero]
