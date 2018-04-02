@@ -23,6 +23,7 @@ library
     , SizedGrid.Coord
     , SizedGrid.Coord.Class
     , SizedGrid.Coord.Periodic
+    , SizedGrid.Coord.HardWrap
     , SizedGrid.Grid.Class
     , SizedGrid.Grid.Grid
     , SizedGrid.Grid.Focused
