@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 
 module Main where
@@ -22,6 +23,9 @@ import           Generics.SOP
 import           System.Random
 
 data Spin = Up | Down deriving (Eq,Show,Enum,Bounded)
+
+flipSpin Up   = Down
+flipSpin Down = Up
 
 spinNumber :: Num a => Spin -> a
 spinNumber Up   = 1
@@ -72,5 +76,47 @@ mean xs = sum xs / fromIntegral (length xs)
 startEnergyMean po n =
   mean . map (totalEnergy po . view asFocusedGrid . fst) . take n . randomGrids
 
+performFlip ::
+       RandomGen g
+    => PhysicalOptions
+    -> FocusedGrid GridType Spin
+    -> Coord GridType
+    -> g
+    -> (FocusedGrid GridType Spin, g)
+performFlip po fg pos g =
+    let oldEnergy = singleEnergy po $ seek pos fg
+        newGrid = fg & gridIndex pos %~ flipSpin
+        newEnergy = singleEnergy po $ seek pos newGrid
+        acceptanceProb = exp (oldEnergy - newEnergy)
+        (a :: Double, g') = random g
+    in if newEnergy > oldEnergy && a <= acceptanceProb
+           then (newGrid, g')
+           else (fg, g')
+
+doSimulation ::
+       (MonadState g m, RandomGen g)
+    => PhysicalOptions
+    -> Int
+    -> FocusedGrid GridType Spin
+    -> m (FocusedGrid GridType Spin)
+doSimulation po n startGrid = do
+    g <- get
+    let (g1, g2) = split g
+        ps :: [Coord GridType] = take n $ randoms g1
+    put g2
+    foldM (\p fg -> state (performFlip po p fg)) startGrid ps
+
+
 main :: IO ()
-main = newStdGen >>= print . startEnergyMean (PhysicalOptions 1 0) 1
+main = do
+    putStrLn "Lets go"
+    g <- newStdGen
+    let po = PhysicalOptions 1 0
+        (startGrid, g') = randomGrid g
+        (endGrid, g'') =
+            over _1 (view asGrid) $
+            runState (doSimulation po (floor $ 1e4) $ view asFocusedGrid startGrid) g'
+    putStrLn $
+        "Start energy: " ++ show (totalEnergy po $ startGrid ^. asFocusedGrid)
+    putStrLn $
+        "End energy: " ++ show (totalEnergy po $ endGrid ^. asFocusedGrid)
