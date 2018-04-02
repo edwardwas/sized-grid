@@ -73,4 +73,4 @@ instance (n ~ (S x), SPeanoI x) => AffineSpace (Periodic n) where
         fromJust $
         numToOrdinal $
         (fromIntegral (ordinalToNum a) + b) `mod`
-        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)) - 1)
+        (fromIntegral $ maxCoordSize (Proxy @(Periodic n)) + 1)

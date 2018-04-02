@@ -1,6 +1,7 @@
 module Test.Utils where
 
 import           Data.AdditiveGroup
+import           Data.AffineSpace
 import           Data.Semigroup
 import           Hedgehog
 import qualified Hedgehog.Gen        as Gen
@@ -68,3 +69,11 @@ additiveGroupLaws gen =
        , testProperty "Inverse id is zeroV" inverseId
        , testProperty "a - (a - b) = b" takeLeaves
        ]
+
+affineSpaceLaws :: (Show a, Eq a, AffineSpace a) => Gen a -> TestTree
+affineSpaceLaws gen =
+    let addZero =
+            property $ do
+                a <- forAll gen
+                a === a .+^ zeroV
+    in testGroup "AffineSpace Laws" [testProperty "Add Zero" addZero]
