@@ -36,7 +36,14 @@ import qualified GHC.TypeLits             as GHC
 import           System.Random
 
 newtype Coord cs = Coord {unCoord :: NP I cs}
-  deriving (Eq, Show, Generic, Ord)
+  deriving (Show, Generic, Ord)
+
+instance All Eq cs => Eq (Coord cs) where
+    Coord a == Coord b =
+        let helper :: All Eq xs => NP I xs -> NP I xs -> Bool
+            helper Nil Nil                 = True
+            helper (I x :* xs) (I y :* ys) = x == y && helper xs ys
+        in helper a b
 
 instance Newtype (Coord cs)
 
