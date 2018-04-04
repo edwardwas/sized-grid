@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -106,34 +107,28 @@ instance ( All AffineSpace cs
               SOP (SOP.Z bs) -> Coord $ helper a bs
 
 allCoord ::
-       forall cs. (All IsCoord cs, SListI cs, All Monoid cs, All Semigroup cs)
+       forall cs. (All IsCoord cs)
     => [Coord cs]
-allCoord =
-    let helper ::
-               forall xs. (All IsCoord xs, SListI xs)
-            => NP I xs
-            -> [NP I xs]
-        helper Nil = [Nil]
-        helper (I (_ :: x) :* ns) = do
-            c <- allCoordLike
-            cs <- reverse $ helper ns
-            return (I c :* cs)
-    in map Coord $ helper $ unCoord mempty
-
---aC :: (CoordSized a ~ cs, All IsCoord cs) => NP [] cs
---aC = hcpure (Proxy :: Proxy IsCoord) allCoordLike
+allCoord = Coord <$> hsequence (hcpure (Proxy :: Proxy IsCoord) allCoordLike)
 
 type family MaxCoordSize (cs :: [k]) :: GHC.Nat where
-  MaxCoordSize '[] = One
-  MaxCoordSize (c ': cs) = Multiply (AsNat (CoordSized c)) (MaxCoordSize cs)
+  MaxCoordSize '[] = 1
+  MaxCoordSize (c ': cs) = (CoordSized c) GHC.* (MaxCoordSize cs)
 
 coordPosition :: (All IsCoord cs) => Coord cs -> Int
 coordPosition (Coord a) =
-    let helper :: (All IsCoord xs) => NP I xs -> Int
-        helper (Nil) = 0
+    let helper :: (All IsCoord xs) => NP I xs -> Integer
+        helper Nil = 0
         helper (I c :* (cs :: NP I ys)) =
-            ordinalToNum (c ^. asOrdinal) + ((fromIntegral $ maxCoordSize $ I c) * helper cs)
-    in (helper a)
+            ordinalToNum (c ^. asOrdinal) * sizeOfList cs + helper cs
+        sizeOfList :: All IsCoord xs => NP I xs -> Integer
+        sizeOfList =
+            product .
+            hcollapse .
+            hcmap
+                (Proxy :: Proxy IsCoord)
+                (\(I (_ :: a)) -> K $ 1 + maxCoordSize (Proxy :: Proxy a))
+    in fromIntegral $ helper a
 
 type family AllDiffSame a xs :: Constraint where
   AllDiffSame _ '[] = ()
