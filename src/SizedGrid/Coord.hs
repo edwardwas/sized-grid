@@ -25,6 +25,7 @@ import           Control.Newtype.Generics
 import           Data.AdditiveGroup
 import           Data.AffineSpace
 import           Data.Functor.Identity
+import           Data.List                (sort)
 import           Data.Semigroup           (Semigroup (..))
 import           Generics.SOP             hiding (Generic, S, Z)
 import qualified Generics.SOP             as SOP
@@ -34,7 +35,7 @@ import qualified GHC.TypeLits             as GHC
 import           System.Random
 
 newtype Coord cs = Coord {unCoord :: NP I cs}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Ord)
 
 instance Newtype (Coord cs)
 
@@ -113,13 +114,14 @@ allCoord =
             => NP I xs
             -> [NP I xs]
         helper Nil = [Nil]
-        helper (I (_ :: x) :* ns) =
-            case sCoordSized (Proxy :: Proxy x) of
-                SS _ -> do
-                    cs <- helper ns
-                    c <- allCoordLike
-                    return (I c :* cs)
+        helper (I (_ :: x) :* ns) = do
+            c <- allCoordLike
+            cs <- reverse $ helper ns
+            return (I c :* cs)
     in map Coord $ helper $ unCoord mempty
+
+--aC :: (CoordSized a ~ cs, All IsCoord cs) => NP [] cs
+--aC = hcpure (Proxy :: Proxy IsCoord) allCoordLike
 
 type family MaxCoordSize (cs :: [k]) :: GHC.Nat where
   MaxCoordSize '[] = One

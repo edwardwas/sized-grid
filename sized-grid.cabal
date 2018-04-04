@@ -40,6 +40,7 @@ library
     , comonad
     , random
     , mtl
+    , constraints
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -58,4 +59,5 @@ test-suite tests
     , vector-space
     , generics-sop
     , lens
+    , adjunctions
   ghc-options: -O0

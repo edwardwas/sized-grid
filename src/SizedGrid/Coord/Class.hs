@@ -1,6 +1,9 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE PolyKinds         #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module SizedGrid.Coord.Class where
 
@@ -9,20 +12,23 @@ import           SizedGrid.Peano
 import           SizedGrid.Type.Number
 
 import           Control.Lens
+import           Data.Proxy
 import           GHC.TypeLits
 
-class IsCoord c where
-  type CoordSized c :: Peano
+class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
+  type CoordSized c :: Nat
   asOrdinal :: Iso' c (Ordinal (CoordSized c))
-  sCoordSized :: proxy c -> SPeano (CoordSized c)
-  maxCoordSize :: proxy c -> Peano
+  sCoordSized :: proxy c -> Proxy (CoordSized c)
+  sCoordSized _ = Proxy
+  maxCoordSize :: proxy c -> Integer
+  maxCoordSize p = natVal (sCoordSized p) - 1
 
 overOrdinal ::
        IsCoord c
-    => (Ordinal (AsPeano (CoordSized c)) -> Ordinal (AsPeano (CoordSized c)))
+    => (Ordinal (CoordSized c) -> Ordinal (CoordSized c))
     -> c
     -> c
 overOrdinal func = over asOrdinal func
 
-allCoordLike :: (IsCoord c, CoordSized c ~ S x, SPeanoI x) => [c]
+allCoordLike :: (IsCoord c, 1 <= CoordSized c) => [c]
 allCoordLike = toListOf (traverse . re asOrdinal) [minBound .. maxBound]

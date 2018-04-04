@@ -44,14 +44,14 @@ instance GHC.KnownNat (AsNat (MaxCoordSize cs)) => Applicative (Grid cs) where
             (fromIntegral $ GHC.natVal (Proxy :: Proxy (AsNat (MaxCoordSize cs))))
     Grid fs <*> Grid as = Grid $ V.zipWith ($) fs as
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs, All Monoid cs, All Semigroup cs) =>
          Distributive (Grid cs) where
     distribute = distributeRep
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (All IsCoord cs, All Monoid cs, All Semigroup cs, GHC.KnownNat (MaxCoordSize cs)) =>
          Representable (Grid cs) where
     type Rep (Grid cs) = Coord cs
-    tabulate func = Grid $ V.fromList $ map func allCoord
+    tabulate func = imap (\c _ -> func c) $ pure ()
     index (Grid v) c = v V.! coordPosition c
 
 instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
@@ -67,3 +67,15 @@ instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
     itraverse func (Grid v) =
         Grid <$> sequenceA (V.zipWith func (V.fromList allCoord) v)
 
+type family Tail xs where
+  Tail (x ': xs) = xs
+
+type family UnsafeGrid cs a where
+  UnsafeGrid '[] a = a
+  UnsafeGrid (c ': cs) a = [UnsafeGrid cs a]
+
+gridToLists :: forall cs a . SListI cs => Grid cs a -> UnsafeGrid cs a
+gridToLists (Grid v) =
+    let helper = undefined
+    in case (shape :: Shape cs) of
+           ShapeNil -> head $ V.toList v

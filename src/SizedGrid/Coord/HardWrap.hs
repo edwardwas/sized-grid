@@ -1,10 +1,12 @@
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
 module SizedGrid.Coord.HardWrap where
@@ -19,23 +21,22 @@ import           Data.AffineSpace
 import           Data.Maybe            (fromJust)
 import           Data.Proxy            (Proxy (..))
 import           Data.Semigroup        (Semigroup (..))
+import           GHC.TypeLits
 import           System.Random         (Random (..))
 
-newtype HardWrap (n :: Peano) = HardWrap
+newtype HardWrap (n :: Nat) = HardWrap
     { unHardWrap :: Ordinal n
     } deriving (Eq,Show,Ord)
 
-deriving instance (n ~ (S x), SPeanoI x) => Random (HardWrap n)
-deriving instance (n ~ (S x), SPeanoI x) => Enum (HardWrap n)
-deriving instance (n ~ (S x), SPeanoI x) => Bounded (HardWrap n)
+--deriving instance Random (HardWrap n)
+deriving instance (KnownNat n, 1 <= n) => Enum (HardWrap n)
+deriving instance (KnownNat n, 1 <= n) => Bounded (HardWrap n)
 
-instance (SPeanoI n) => IsCoord (HardWrap n) where
+instance (1 <= n, KnownNat n) => IsCoord (HardWrap n) where
     type CoordSized (HardWrap n) = n
     asOrdinal = iso unHardWrap HardWrap
-    sCoordSized _ = sPeano
-    maxCoordSize p = demoteSPeano (sCoordSized p) - 1
 
-instance (n ~ S x, SPeanoI x) => Semigroup (HardWrap n) where
+instance (1 <= n, KnownNat n) => Semigroup (HardWrap n) where
     HardWrap a <> HardWrap b =
         HardWrap $
         fromJust $
@@ -44,11 +45,11 @@ instance (n ~ S x, SPeanoI x) => Semigroup (HardWrap n) where
             (maxCoordSize (Proxy @(HardWrap n)))
             (ordinalToNum a + ordinalToNum b)
 
-instance (n ~ S x, SPeanoI x) => Monoid (HardWrap n) where
-  mempty = HardWrap OZ
+instance (KnownNat n, 1 <= n) => Monoid (HardWrap n) where
+  mempty = HardWrap minBound
   mappend = (<>)
 
-instance (n ~ S x, SPeanoI x) => AffineSpace (HardWrap n) where
+instance (1 <= n, KnownNat n) => AffineSpace (HardWrap n) where
     type Diff (HardWrap n) = Integer
     HardWrap a .-. HardWrap b =
         max 0 $

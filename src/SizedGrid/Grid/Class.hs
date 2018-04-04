@@ -4,6 +4,7 @@
 {-# LANGUAGE MonoLocalBinds         #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module SizedGrid.Grid.Class where
 
@@ -16,13 +17,18 @@ import           Control.Lens           hiding (index)
 import           Data.Functor.Rep
 import           Data.Semigroup         hiding (All (..))
 import           Generics.SOP
+import qualified GHC.TypeLits           as GHC
 
 class IsGrid cs grid | grid -> cs where
   gridIndex :: Coord cs -> Lens' (grid a) a
   asGrid :: Lens' (grid a) (Grid cs a)
   asFocusedGrid :: Lens' (grid a) (FocusedGrid cs a)
 
-instance (All Semigroup cs, All Monoid cs, All IsCoord cs) =>
+instance ( GHC.KnownNat (MaxCoordSize cs)
+         , All Semigroup cs
+         , All Monoid cs
+         , All IsCoord cs
+         ) =>
          IsGrid cs (Grid cs) where
     gridIndex coord =
         lens
@@ -31,7 +37,11 @@ instance (All Semigroup cs, All Monoid cs, All IsCoord cs) =>
     asGrid = id
     asFocusedGrid = lens (\g -> FocusedGrid g mempty) (\g fg -> focusedGrid fg)
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance ( GHC.KnownNat (MaxCoordSize cs)
+         , All IsCoord cs
+         , All Monoid cs
+         , All Semigroup cs
+         ) =>
          IsGrid cs (FocusedGrid cs) where
     gridIndex c =
         (\f (FocusedGrid g p) -> (\g' -> FocusedGrid g' p) <$> f g) .
