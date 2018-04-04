@@ -28,7 +28,7 @@ newtype HardWrap (n :: Nat) = HardWrap
     { unHardWrap :: Ordinal n
     } deriving (Eq,Show,Ord)
 
---deriving instance Random (HardWrap n)
+deriving instance (KnownNat n, 1 <= n) => Random (HardWrap n)
 deriving instance (KnownNat n, 1 <= n) => Enum (HardWrap n)
 deriving instance (KnownNat n, 1 <= n) => Bounded (HardWrap n)
 

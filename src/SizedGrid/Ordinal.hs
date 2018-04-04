@@ -22,6 +22,7 @@ import           Data.Proxy
 import           Data.Typeable
 import           GHC.TypeLits
 import           System.Random
+import           System.Random
 import           Unsafe.Coerce
 
 data SBool a where
@@ -60,6 +61,12 @@ instance Eq (Ordinal m) where
 
 instance Ord (Ordinal m) where
   compare (Ordinal a) (Ordinal b) = compare (natVal a) (natVal b)
+
+instance (1 <= m, KnownNat m) => Random (Ordinal m) where
+    randomR (mi, ma) g =
+        let (n, g') = randomR (fromEnum mi, fromEnum ma) g
+        in (toEnum n, g')
+    random = randomR (minBound, maxBound)
 
 numToOrdinal ::
        forall a m. (KnownNat m, Integral a)

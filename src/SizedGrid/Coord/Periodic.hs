@@ -29,17 +29,17 @@ import           System.Random
 
 newtype Periodic (n :: Nat) = Periodic
     { unPeriodic :: Ordinal n
-    } deriving (Eq,Show,Ord)
+    } deriving (Eq, Show, Ord)
 
---deriving instance (n ~ (S x), SPeanoI x) => Random (Periodic n)
+deriving instance (1 <= n, KnownNat n) => Random (Periodic n)
 
---instance Enum (Periodic n) where
---    toEnum x =
---        Periodic $
---        fromJust $
---        numToOrdinal $
---        (fromIntegral x) `mod` (maxCoordSize (Proxy @(Periodic n)))
---    fromEnum (Periodic o) = ordinalToNum o
+instance (1 <= n, KnownNat n) => Enum (Periodic n) where
+    toEnum x =
+        Periodic $
+        fromJust $
+        numToOrdinal $
+        (fromIntegral x) `mod` (maxCoordSize (Proxy @(Periodic n)))
+    fromEnum (Periodic o) = ordinalToNum o
 
 instance (1 <= n, KnownNat n) => IsCoord (Periodic n) where
     type CoordSized (Periodic n) = n

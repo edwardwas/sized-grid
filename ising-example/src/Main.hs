@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 
@@ -21,13 +22,19 @@ import           SizedGrid.Type.Number
 import           Control.Comonad
 import           Control.Comonad.Store
 import           Control.Lens
+import           Control.Monad
 import           Control.Monad.Random
 import           Data.AdditiveGroup
+import           Data.AffineSpace
+import           Data.Monoid                            ((<>))
 import           Data.Proxy
-import           Generics.SOP             hiding (Proxy (..))
-import qualified GHC.TypeLits             as GHC
-import           Pipes                    hiding (Proxy (..))
-import qualified Pipes.Prelude            as P
+import           Generics.SOP                           hiding (Proxy (..))
+import qualified GHC.TypeLits                           as GHC
+import           Graphics.Gloss
+import           Graphics.Gloss.Interface.Pure.Simulate
+import           Pipes                                  hiding (Proxy (..),
+                                                         each)
+import qualified Pipes.Prelude                          as P
 import           System.Random
 
 data Spin = Up | Down deriving (Eq,Show,Enum,Bounded)
@@ -57,7 +64,8 @@ instance Random Spin where
          then (Up, g')
          else (Down, g')
 
-type GridType = '[Periodic (AsPeano 40), Periodic (AsPeano 40)]
+type GridType = '[Periodic 60, Periodic 60]
+--type GridType = '[Periodic (AsPeano 1), Periodic (AsPeano 1)]
 
 gridSize = GHC.natVal (Proxy :: Proxy (MaxCoordSize GridType))
 
@@ -120,6 +128,50 @@ takeOneIn n = forever $ do
   _ <- replicateM (n - 1) await
   yield a
 
+data SimulationState = SimulationState
+    { _current              :: Grid GridType Spin
+    , _stepPerTime          :: Float
+    , _elapsedSinceLastStep :: Float
+    , _gen                  :: StdGen
+    } deriving (Show)
+makeLenses ''SimulationState
+
+displaySimulation po startSimulationState =
+    let draw = ifoldMapOf (current . itraversed) drawHelper
+        drawHelper p a =
+            let c =
+                    if a == Up
+                        then red
+                        else blue
+                (x, y) = p .-. mempty
+            in translate
+                   (8 * fromIntegral x)
+                   (8 * fromIntegral y)
+                    $ color c (translate 1 1 $ rectangleSolid 8 8)
+        update vp dt old
+            | old ^. elapsedSinceLastStep + dt >= old ^. stepPerTime =
+                let (Just newGrid, g') = runRand (P.last (runSimulation po 1)) (old ^. gen)
+                in update vp (dt - old ^. stepPerTime) $
+                   old & (current .~ newGrid) &
+                   (elapsedSinceLastStep -~ old ^. stepPerTime) &
+                   (gen .~ g')
+            | otherwise = old & elapsedSinceLastStep +~ dt
+    in simulate
+           (InWindow "floatMe" (800, 800) (1, 1))
+           white
+           60
+           startSimulationState
+           (translate (-350) (-350) . draw)
+           update
+
 main =
-  let po = PhysicalOptions 10
-  in runEffect (runSimulation po 10 >-> P.map (totalEnergy po) >-> P.print)
+    let po = PhysicalOptions 10
+    in do g <- newStdGen
+          startGrid <- randomGrid
+          displaySimulation po $
+              SimulationState
+              { _current = startGrid
+              , _stepPerTime =0.5
+              , _elapsedSinceLastStep = 0
+              , _gen = g
+              }
