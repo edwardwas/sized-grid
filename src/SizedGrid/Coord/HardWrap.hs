@@ -13,8 +13,6 @@ module SizedGrid.Coord.HardWrap where
 
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Control.Lens          (iso)
 import           Data.AffineSpace

@@ -16,24 +16,24 @@ module SizedGrid.Coord where
 
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
-import           Control.Applicative      (liftA2)
-import           Control.Lens             ((^.), _1)
+import           Control.Applicative   (liftA2)
+import           Control.Lens          ((^.))
 import           Control.Monad.State
-import           Control.Newtype.Generics
 import           Data.AdditiveGroup
 import           Data.AffineSpace
 import           Data.Functor.Identity
-import           Data.List                (sort)
-import           Data.Semigroup           (Semigroup (..))
-import           Generics.SOP             hiding (Generic, S, Z)
-import qualified Generics.SOP             as SOP
-import           GHC.Exts                 (Constraint)
-import           GHC.Generics             (Generic)
-import qualified GHC.TypeLits             as GHC
-import           System.Random
+import           Data.Semigroup        (Semigroup (..))
+import           Generics.SOP          hiding (Generic, S, Z)
+import qualified Generics.SOP          as SOP
+import           GHC.Exts              (Constraint)
+import           GHC.Generics          (Generic)
+import qualified GHC.TypeLits          as GHC
+import           System.Random         (Random (..))
+
+type family Length cs where
+  Length '[] = 0
+  Length (c ': cs) = (GHC.+) 1 (Length cs)
 
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Show, Generic, Ord)
@@ -44,8 +44,6 @@ instance All Eq cs => Eq (Coord cs) where
             helper Nil Nil                 = True
             helper (I x :* xs) (I y :* ys) = x == y && helper xs ys
         in helper a b
-
-instance Newtype (Coord cs)
 
 instance All Semigroup cs => Semigroup (Coord cs) where
   Coord a <> Coord b = Coord $ hcliftA2 (Proxy :: Proxy Semigroup) (liftA2 (<>)) a b
@@ -104,14 +102,15 @@ instance ( All AffineSpace cs
         let helper ::
                    All AffineSpace xs => NP I xs -> NP I xs -> NP I (MapDiff xs)
             helper Nil Nil                 = Nil
-            helper (I a :* as) (I b :* bs) = I (a .-. b) :* helper as bs
+            helper (I x :* xs) (I y :* ys) = I (x .-. y) :* helper xs ys
         in to $ SOP $ SOP.Z $ helper a b
     Coord a .+^ b =
         let helper :: All AffineSpace xs => NP I xs -> NP I (MapDiff xs) -> NP I xs
             helper Nil Nil                 = Nil
-            helper (I a :* as) (I b :* bs) = I (a .+^ b) :* helper as bs
+            helper (I x :* xs) (I y :* ys) = I (x .+^ y) :* helper xs ys
         in case from b of
               SOP (SOP.Z bs) -> Coord $ helper a bs
+              _ -> error "Error in adding Coord. Should be unreachable"
 
 allCoord ::
        forall cs. (All IsCoord cs)

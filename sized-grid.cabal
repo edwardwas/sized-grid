@@ -17,9 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     
-      SizedGrid.Peano
-    , SizedGrid.Type.Number
-    , SizedGrid.Ordinal
+      SizedGrid.Ordinal
     , SizedGrid.Coord
     , SizedGrid.Coord.Class
     , SizedGrid.Coord.Periodic
@@ -34,7 +32,6 @@ library
     , vector
     , vector-space
     , generics-sop
-    , newtype-generics
     , distributive
     , adjunctions
     , comonad
@@ -43,6 +40,7 @@ library
     , constraints
   hs-source-dirs:      src
   default-language:    Haskell2010
+  ghc-options: -Wall
 
 test-suite tests
   type: exitcode-stdio-1.0

@@ -15,29 +15,26 @@
 module SizedGrid.Ordinal where
 
 import           Data.Constraint
-import           Data.Constraint.Deferrable
 import           Data.Constraint.Nat
-import           Data.Maybe                 (fromJust)
+import           Data.Maybe          (fromJust)
 import           Data.Proxy
-import           Data.Typeable
 import           GHC.TypeLits
-import           System.Random
 import           System.Random
 import           Unsafe.Coerce
 
 data SBool a where
-  STrue :: SBool True
-  SFalse :: SBool False
+  STrue :: SBool 'True
+  SFalse :: SBool 'False
 
 deriving instance Show (SBool a)
 
 class SBoolI a where
   sBool :: SBool a
 
-instance SBoolI True where
+instance SBoolI 'True where
   sBool = STrue
 
-instance SBoolI False where
+instance SBoolI 'False where
   sBool = SFalse
 
 sLessThan ::
@@ -51,7 +48,7 @@ sLessThan _ _ =
         else unsafeCoerce SFalse
 
 data Ordinal m where
-  Ordinal :: (KnownNat n, KnownNat m, (n + 1 <=? m) ~ True ) => Proxy n -> Ordinal m
+  Ordinal :: (KnownNat n, KnownNat m, (n + 1 <=? m) ~ 'True ) => Proxy n -> Ordinal m
 
 instance Show (Ordinal m) where
   show (Ordinal p) = "Ordinal (" ++ show (natVal p) ++ "/" ++ show (natVal (Proxy @m)) ++ ")"
@@ -111,5 +108,5 @@ instance (1 <= m, KnownNat m) => Bounded (Ordinal m) where
         takeNat @m @1
 
 instance (1 <= m, KnownNat m) => Enum (Ordinal m) where
-  toEnum = fromJust . numToOrdinal . fromIntegral
+  toEnum = fromJust . numToOrdinal
   fromEnum (Ordinal p) = fromIntegral $ natVal p

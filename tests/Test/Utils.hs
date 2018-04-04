@@ -85,4 +85,6 @@ affineSpaceLaws gen =
             property $ do
                 a <- forAll gen
                 a .-. a === zeroV
-    in testGroup "AffineSpace Laws" [testProperty "Add Zero" addZero]
+    in testGroup
+           "AffineSpace Laws"
+           [testProperty "Add Zero" addZero, testProperty "Take self" takeSelf]

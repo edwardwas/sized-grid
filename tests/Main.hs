@@ -14,13 +14,9 @@ import           SizedGrid.Coord.Class
 import           SizedGrid.Coord.HardWrap
 import           SizedGrid.Coord.Periodic
 import           SizedGrid.Grid.Grid
-import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Test.Utils
 
-import           Control.Lens             hiding (index)
 import           Data.Functor.Rep
 import           Data.Semigroup           (Semigroup)
 import           Generics.SOP             hiding (S, Z)

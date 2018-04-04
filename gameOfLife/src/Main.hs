@@ -17,15 +17,11 @@ import           SizedGrid.Grid.Class
 import           SizedGrid.Grid.Focused
 import           SizedGrid.Grid.Grid
 import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Control.Comonad
 import           Control.Comonad.Store
 import           Control.Lens
-import           Control.Monad.Random
 import           Data.AffineSpace
-import           Data.Functor.Rep
 import           Data.Semigroup                     (Semigroup (..))
 import           Generics.SOP                       hiding (S, Z)
 import           GHC.TypeLits
@@ -67,7 +63,7 @@ applyRule ::
 applyRule rule =
     extend $ \fg ->
         runRule rule (extract fg) $
-        map (\p -> peek p fg) $ filter (/= pos fg) $ moorePoints 1 $ pos fg
+        map (\p -> peek p fg) $ filter (/= pos fg) $ moorePoints (1 :: Integer) $ pos fg
 
 data WorldState cs = WorldState
     { _grid                     :: Grid cs TileState
@@ -87,8 +83,8 @@ gridPositionFromScreenCoord ::
     -> a
     -> Maybe (Coord '[ x, y])
 gridPositionFromScreenCoord x y =
-    let x' = floor ((x + 16) / 32)
-        y' = floor ((y + 16) / 32)
+    let x' :: Integer = floor ((x + 16) / 32)
+        y' :: Int = floor ((y + 16) / 32)
     in (\a b ->
             Coord
                 (I (view (re asOrdinal) a) :* I (view (re asOrdinal) b) :* Nil)) <$>
@@ -117,7 +113,7 @@ drawWorld ws =
            ws `mappend`
        translate (-200) (-200) (scale 0.1 0.1 (text (ws ^. displayString)))
 
-updateWorld :: forall x y n m .
+updateWorld :: forall x y .
        ( IsCoord x
        , IsCoord y
        , Semigroup x

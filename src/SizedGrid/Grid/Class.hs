@@ -35,7 +35,7 @@ instance ( GHC.KnownNat (MaxCoordSize cs)
             (\g -> index g coord)
             (\(Grid v) a -> Grid (v & ix (coordPosition coord) .~ a))
     asGrid = id
-    asFocusedGrid = lens (\g -> FocusedGrid g mempty) (\g fg -> focusedGrid fg)
+    asFocusedGrid = lens (\g -> FocusedGrid g mempty) (\_ fg -> focusedGrid fg)
 
 instance ( GHC.KnownNat (MaxCoordSize cs)
          , All IsCoord cs

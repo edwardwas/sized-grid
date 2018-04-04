@@ -8,8 +8,6 @@
 module SizedGrid.Coord.Class where
 
 import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Control.Lens
 import           Data.Proxy

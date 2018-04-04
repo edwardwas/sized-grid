@@ -16,8 +16,6 @@ import           SizedGrid.Coord.Periodic
 import           SizedGrid.Grid.Class
 import           SizedGrid.Grid.Focused
 import           SizedGrid.Grid.Grid
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Control.Comonad
 import           Control.Comonad.Store

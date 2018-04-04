@@ -15,8 +15,6 @@ module SizedGrid.Coord.Periodic where
 
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
-import           SizedGrid.Peano
-import           SizedGrid.Type.Number
 
 import           Control.Lens
 import           Data.AdditiveGroup
@@ -59,7 +57,7 @@ instance (1 <= n, KnownNat n) => AdditiveGroup (Periodic n) where
     zeroV = mempty
     (^+^) = (<>)
     negateV (Periodic o) =
-        let n = fromIntegral (maxCoordSize (Proxy @(Periodic n))) + 1
+        let n = maxCoordSize (Proxy @(Periodic n)) + 1
         in Periodic $ fromJust $ numToOrdinal (negate (ordinalToNum o) `mod` n)
 
 instance (1 <= n, KnownNat n) => AffineSpace (Periodic n) where
@@ -71,5 +69,5 @@ instance (1 <= n, KnownNat n) => AffineSpace (Periodic n) where
         Periodic $
         fromJust $
         numToOrdinal $
-        (fromIntegral (ordinalToNum a) + b) `mod`
+        (ordinalToNum a + b) `mod`
         (fromIntegral $ maxCoordSize (Proxy @(Periodic n)) + 1)
