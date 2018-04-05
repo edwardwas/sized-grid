@@ -1,10 +1,13 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Test.Utils where
 
 import           Data.AdditiveGroup
 import           Data.Aeson
 import           Data.AffineSpace
+import           Data.Proxy
 import           Data.Semigroup
 import           Hedgehog
 import qualified Hedgehog.Gen        as Gen
@@ -96,3 +99,26 @@ affineSpaceLaws gen =
     in testGroup
            "AffineSpace Laws"
            [testProperty "Add Zero" addZero, testProperty "Take self" takeSelf]
+
+applicativeLaws ::
+       forall f a.
+       (Applicative f, Traversable f, Show (f a), Eq (f a), Num a, Show a)
+    => Proxy f
+    -> Gen a
+    -> TestTree
+applicativeLaws _ gen =
+    let genF :: Gen (f a) = sequence $ pure gen
+        identiy =
+            property $ do
+                v <- forAll genF
+                v === (pure id <*> v)
+        homomorphism =
+            property $ do
+                x <- forAll gen
+                f <- (+) <$> forAll gen
+                (pure f <*> pure x) === pure @f (f x)
+    in testGroup
+           "Applicative Laws"
+           [ testProperty "Identity" identiy
+           , testProperty "Homomorphism" homomorphism
+           ]

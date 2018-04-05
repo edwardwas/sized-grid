@@ -24,6 +24,7 @@ import           GHC.TypeLits
 import qualified GHC.TypeLits             as GHC
 import           Hedgehog
 import qualified Hedgehog.Gen             as Gen
+import qualified Hedgehog.Range           as Range
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
 
@@ -44,13 +45,12 @@ gridTests ::
        )
     => Gen (Coord cs)
     -> [TestTree]
-gridTests gen =
+gridTests genC =
     let tabulateIndex =
             property $ do
-                c <- forAll gen
+                c <- forAll genC
                 c === index (tabulate id :: Grid cs (Coord cs)) c
     in [testProperty "Tabulate index" tabulateIndex]
-
 
 main :: IO ()
 main =
@@ -93,9 +93,13 @@ main =
            , testGroup "Coord [Periodic 10, Periodic 20]" coord2
            , testGroup
                  "Grid"
-                 (gridTests @'[ Periodic 10, Periodic 10] $
-                  genCoord $
-                  (Periodic <$> Gen.enumBounded) :*
-                  (Periodic <$> Gen.enumBounded) :*
-                  Nil)
+                 ((gridTests @'[ Periodic 10, Periodic 10] $
+                   genCoord $
+                   (Periodic <$> Gen.enumBounded) :*
+                   (Periodic <$> Gen.enumBounded) :*
+                   Nil) ++
+                  [ applicativeLaws
+                        (Proxy @(Grid '[ Periodic 10, Periodic 10]))
+                        (Gen.int $ Range.linear 0 100)
+                  ])
            ]
