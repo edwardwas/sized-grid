@@ -18,6 +18,7 @@ import           SizedGrid.Ordinal
 
 import           Control.Lens
 import           Data.AdditiveGroup
+import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Maybe            (fromJust)
 import           Data.Proxy
@@ -30,6 +31,11 @@ newtype Periodic (n :: Nat) = Periodic
     } deriving (Eq, Show, Ord)
 
 deriving instance (1 <= n, KnownNat n) => Random (Periodic n)
+
+deriving instance KnownNat n => ToJSON (Periodic n)
+deriving instance KnownNat n => ToJSONKey (Periodic n)
+deriving instance KnownNat n => FromJSON (Periodic n)
+deriving instance KnownNat n => FromJSONKey (Periodic n)
 
 instance (1 <= n, KnownNat n) => Enum (Periodic n) where
     toEnum x =

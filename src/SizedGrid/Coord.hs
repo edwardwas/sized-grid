@@ -21,9 +21,11 @@ import           Control.Applicative   (liftA2)
 import           Control.Lens          ((^.))
 import           Control.Monad.State
 import           Data.AdditiveGroup
+import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Functor.Identity
 import           Data.Semigroup        (Semigroup (..))
+import qualified Data.Vector           as V
 import           Generics.SOP          hiding (Generic, S, Z)
 import qualified Generics.SOP          as SOP
 import           GHC.Exts              (Constraint)
@@ -37,6 +39,17 @@ type family Length cs where
 
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Show, Generic, Ord)
+
+instance (All ToJSON cs) => ToJSON (Coord cs) where
+    toJSON (Coord a) =
+        Array $
+        V.fromList $
+        hcollapse $ hcmap (Proxy @ToJSON) (\(I x) -> K $ toJSON x) a
+
+instance All FromJSON cs => FromJSON (Coord cs) where
+  parseJSON = withArray "Coord" $ \v -> do
+    let Just a = SOP.fromList $ V.toList v
+    Coord <$> hsequence ( hcmap (Proxy @FromJSON) (\(K x) -> parseJSON x) a)
 
 instance All Eq cs => Eq (Coord cs) where
     Coord a == Coord b =

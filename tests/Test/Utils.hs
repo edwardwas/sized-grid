@@ -3,6 +3,7 @@
 module Test.Utils where
 
 import           Data.AdditiveGroup
+import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Semigroup
 import           Hedgehog
@@ -10,6 +11,13 @@ import qualified Hedgehog.Gen        as Gen
 import qualified Hedgehog.Range      as Range
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
+
+aesonLaws :: (Show a, Eq a, ToJSON a, FromJSON a) => Gen a -> TestTree
+aesonLaws gen =
+    let encodeDecode = property $ do
+          a <- forAll gen
+          Just a === decode (encode a)
+    in testGroup "Aeson Laws" [testProperty "Encode decode" encodeDecode]
 
 semigroupLaws :: (Show a, Eq a, Semigroup a) => Gen a -> TestTree
 semigroupLaws gen =

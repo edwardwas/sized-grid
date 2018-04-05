@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -14,6 +15,8 @@
 
 module SizedGrid.Ordinal where
 
+import           Control.Monad       (guard)
+import           Data.Aeson
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Maybe          (fromJust)
@@ -110,3 +113,16 @@ instance (1 <= m, KnownNat m) => Bounded (Ordinal m) where
 instance (1 <= m, KnownNat m) => Enum (Ordinal m) where
   toEnum = fromJust . numToOrdinal
   fromEnum (Ordinal p) = fromIntegral $ natVal p
+
+instance KnownNat m => ToJSON (Ordinal m) where
+  toJSON (Ordinal p) = object ["size" .= natVal (Proxy @m), "value" .= natVal p]
+
+instance KnownNat m => FromJSON (Ordinal m) where
+  parseJSON = withObject "Ordinal" $ \v -> do
+    size <- v .: "size"
+    guard (size == natVal (Proxy @m))
+    Just o <- numToOrdinal @Integer <$> v .: "value"
+    return o
+
+instance KnownNat m => ToJSONKey (Ordinal m)
+instance KnownNat m => FromJSONKey (Ordinal m)

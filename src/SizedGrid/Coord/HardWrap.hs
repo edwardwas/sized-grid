@@ -15,6 +15,7 @@ import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
 
 import           Control.Lens          (iso)
+import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Maybe            (fromJust)
 import           Data.Proxy            (Proxy (..))
@@ -29,6 +30,10 @@ newtype HardWrap (n :: Nat) = HardWrap
 deriving instance (KnownNat n, 1 <= n) => Random (HardWrap n)
 deriving instance (KnownNat n, 1 <= n) => Enum (HardWrap n)
 deriving instance (KnownNat n, 1 <= n) => Bounded (HardWrap n)
+deriving instance KnownNat n => ToJSON (HardWrap n)
+deriving instance KnownNat n => FromJSON (HardWrap n)
+deriving instance KnownNat n => ToJSONKey (HardWrap n)
+deriving instance KnownNat n => FromJSONKey (HardWrap n)
 
 instance (1 <= n, KnownNat n) => IsCoord (HardWrap n) where
     type CoordSized (HardWrap n) = n

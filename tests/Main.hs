@@ -60,24 +60,30 @@ main =
                , monoidLaws g
                , additiveGroupLaws g
                , affineSpaceLaws g
+               , aesonLaws g
                ]
         hardWrap =
             let g :: Gen (HardWrap 10) = HardWrap <$> Gen.enumBounded
-            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g]
+            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g]
         coord =
             let g :: Gen (Coord '[ HardWrap 10, Periodic 20]) =
                     genCoord
                         ((HardWrap <$> Gen.enumBounded) :*
                          (Periodic <$> Gen.enumBounded) :*
                          Nil)
-            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g]
+            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g]
         coord2 =
             let g :: Gen (Coord '[ Periodic 10, Periodic 20]) =
                     genCoord
                         ((Periodic <$> Gen.enumBounded) :*
                          (Periodic <$> Gen.enumBounded) :*
                          Nil)
-            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, additiveGroupLaws g]
+            in [ semigroupLaws g
+               , monoidLaws g
+               , affineSpaceLaws g
+               , additiveGroupLaws g
+               , aesonLaws g
+               ]
     in defaultMain $
        testGroup
            "tests"
@@ -85,5 +91,11 @@ main =
            , testGroup "HardWrap 20" hardWrap
            , testGroup "Coord [HardWrap 10, Periodic 20]" coord
            , testGroup "Coord [Periodic 10, Periodic 20]" coord2
-           , testGroup "Grid" (gridTests @'[Periodic 10, Periodic 10] $ genCoord $ (Periodic <$> Gen.enumBounded) :* (Periodic <$> Gen.enumBounded) :* Nil)
+           , testGroup
+                 "Grid"
+                 (gridTests @'[ Periodic 10, Periodic 10] $
+                  genCoord $
+                  (Periodic <$> Gen.enumBounded) :*
+                  (Periodic <$> Gen.enumBounded) :*
+                  Nil)
            ]
