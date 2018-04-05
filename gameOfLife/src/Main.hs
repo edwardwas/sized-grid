@@ -3,6 +3,7 @@
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf            #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -65,26 +66,30 @@ applyRule rule =
         runRule rule (extract fg) $
         map (\p -> peek p fg) $ filter (/= pos fg) $ moorePoints (1 :: Integer) $ pos fg
 
+data DisplayInfo = DisplayInfo {
+  tileSize :: Float
+  , offset :: Float
+}
+
 data WorldState cs = WorldState
     { _grid                     :: Grid cs TileState
     , _timeElapsedSinceLastTick :: Float
     , _rule                     :: Rule (Length cs)
     , _isTicking                :: Bool
-    , _displayString            :: String
     }
 makeLenses ''WorldState
 
 gridPositionFromScreenCoord ::
-       ( RealFrac a
-       , IsCoord x
+       ( IsCoord x
        , IsCoord y
        )
-    => a
-    -> a
+    => DisplayInfo
+    -> Float
+    -> Float
     -> Maybe (Coord '[ x, y])
-gridPositionFromScreenCoord x y =
-    let x' :: Integer = floor ((x + 16) / 32)
-        y' :: Int = floor ((y + 16) / 32)
+gridPositionFromScreenCoord DisplayInfo{..} x y =
+    let x' :: Integer = floor ((x + 0.5*tileSize + offset ) / tileSize)
+        y' :: Int = floor ((y + 0.5 * tileSize + offset ) / tileSize)
     in (\a b ->
             Coord
                 (I (view (re asOrdinal) a) :* I (view (re asOrdinal) b) :* Nil)) <$>
@@ -99,19 +104,19 @@ drawWorld ::
        , All AffineSpace cs
        , All Integral (MapDiff cs)
        )
-    => WorldState cs
+    => DisplayInfo
+    -> WorldState cs
     -> Picture
-drawWorld ws =
-    let image Alive = color black $ rectangleSolid 32 32
-        image Dead  = color black $ rectangleWire 32 32
+drawWorld DisplayInfo{..} ws =
+    let image Alive = color black $ rectangleSolid tileSize tileSize
+        image Dead  = color black $ rectangleWire tileSize tileSize
     in ifoldMapOf
            (grid . itraversed)
            (\p a ->
                 let (x, y) = p .-. mempty
-                in translate (fromIntegral $ 32 * x) (fromIntegral $ 32 * y) $
+                in translate (tileSize * fromIntegral x) (tileSize * fromIntegral y) $
                    image a)
-           ws `mappend`
-       translate (-200) (-200) (scale 0.1 0.1 (text (ws ^. displayString)))
+           ws
 
 updateWorld :: forall x y .
        ( IsCoord x
@@ -126,18 +131,16 @@ updateWorld :: forall x y .
        , Show y
        , KnownNat ((*) (CoordSized x) (CoordSized y))
        )
-    => Event
+    => DisplayInfo
+    -> Event
     -> WorldState '[ x, y]
     -> WorldState '[ x, y]
-updateWorld (EventKey (MouseButton LeftButton) Up _ (x, y)) world =
-    case gridPositionFromScreenCoord x y of
+updateWorld di (EventKey (MouseButton LeftButton) Up _ (x, y)) world =
+    case gridPositionFromScreenCoord di x y of
         Just p  -> world & grid . gridIndex p %~ flipTileState
         Nothing -> world
-updateWorld (EventKey (Char 't') Up _ _) world = world & isTicking %~ not
-updateWorld (EventMotion (x, y)) world =
-    world & displayString .~
-    show (x, y, gridPositionFromScreenCoord x y :: Maybe (Coord '[ x, y]))
-updateWorld _ world = world
+updateWorld _ (EventKey (Char 't') Up _ _) world = world & isTicking %~ not
+updateWorld _ _ world = world
 
 tickWorld ::
        ( All Monoid cs
@@ -152,28 +155,28 @@ tickWorld ::
     -> WorldState cs
     -> WorldState cs
 tickWorld dt world
-    | world ^. timeElapsedSinceLastTick + dt >= 1 && world ^. isTicking  =
+    | world ^. timeElapsedSinceLastTick + dt >= 0.25 && world ^. isTicking  =
         world & grid . asFocusedGrid %~ applyRule (world ^. rule) &
         timeElapsedSinceLastTick +~
-        (dt - 1)
+        (dt - 0.25)
     | world ^. isTicking = world & timeElapsedSinceLastTick +~ dt
     | otherwise = world
 
 main :: IO ()
 main =
-    let startGame :: WorldState '[ Periodic 30, Periodic 30] =
+    let startGame :: WorldState '[ Periodic 60, Periodic 60] =
             WorldState
             { _grid = pure Dead
             , _timeElapsedSinceLastTick = 0
             , _rule = gameOfLife
             , _isTicking = False
-            , _displayString = ""
             }
+        di = DisplayInfo {tileSize = 16, offset = 500}
     in play
-           (InWindow "floatMe" (960, 960) (1, 1))
+           (InWindow "floatMe" (1100, 1100) (1, 1))
            white
            60
            startGame
-           (\w -> drawWorld w)
-           updateWorld
+           (\w -> translate (negate $ offset di) (negate $ offset di) $ drawWorld di w)
+           (updateWorld di)
            tickWorld
