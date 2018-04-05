@@ -6,6 +6,7 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -22,6 +23,7 @@ import           Data.Proxy            (Proxy (..))
 import           Data.Semigroup        (Semigroup (..))
 import qualified Data.Vector           as V
 import           Generics.SOP
+import           GHC.Exts
 import qualified GHC.TypeLits          as GHC
 
 data Grid (cs :: [*]) a = Grid
@@ -57,3 +59,39 @@ instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
          TraversableWithIndex (Coord cs) (Grid cs) where
     itraverse func (Grid v) =
         Grid <$> sequenceA (V.zipWith func (V.fromList allCoord) v)
+
+type family Head xs where
+  Head (x ': xs) = x
+
+type family Tail xs where
+  Tail (x ': xs) = xs
+
+type family CollapseGrid cs a where
+  CollapseGrid '[] a = a
+  CollapseGrid (c ': cs) a = [CollapseGrid cs a]
+
+type family AllGridSizeKnown cs :: Constraint where
+  AllGridSizeKnown '[] = ()
+  AllGridSizeKnown cs = (GHC.KnownNat (MaxCoordSize (Tail cs)), AllGridSizeKnown (Tail cs))
+
+splitVectorBySize :: Int -> V.Vector a -> [V.Vector a]
+splitVectorBySize n v
+  | V.length v >= n = V.take n v : splitVectorBySize n (V.drop n v)
+  | V.null v = []
+  | otherwise = [v]
+
+collapseGrid ::
+       forall cs a.
+       ( All IsCoord cs
+       , AllGridSizeKnown cs
+       )
+    => Grid cs a
+    -> CollapseGrid cs a
+collapseGrid (Grid v) =
+    case (shape :: Shape cs) of
+        ShapeNil -> v V.! 0
+        ShapeCons _ ->
+            map (collapseGrid . Grid @(Tail cs)) $
+            splitVectorBySize
+                (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
+                v
