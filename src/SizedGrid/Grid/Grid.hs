@@ -21,7 +21,6 @@ import           Data.Aeson
 import           Data.Distributive
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
-import           Data.Semigroup        (Semigroup (..))
 import qualified Data.Vector           as V
 import           Generics.SOP
 import           GHC.Exts
@@ -38,25 +37,28 @@ instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
             (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
     Grid fs <*> Grid as = Grid $ V.zipWith ($) fs as
 
-instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) => Monad (Grid cs) where
+  g >>= f = imap (\p a -> f a `index` p) g
+
+instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
          Distributive (Grid cs) where
     distribute = distributeRep
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs, GHC.KnownNat (MaxCoordSize cs)) =>
+instance (All IsCoord cs, GHC.KnownNat (MaxCoordSize cs)) =>
          Representable (Grid cs) where
     type Rep (Grid cs) = Coord cs
-    tabulate func = imap (\c _ -> func c) $ pure ()
+    tabulate func = Grid $ V.fromList $ map func $ allCoord
     index (Grid v) c = v V.! coordPosition c
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (All IsCoord cs) =>
          FunctorWithIndex (Coord cs) (Grid cs) where
     imap func (Grid v) = Grid $ V.zipWith func (V.fromList allCoord) v
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (All IsCoord cs) =>
          FoldableWithIndex (Coord cs) (Grid cs) where
     ifoldMap func (Grid v) = foldMap id $ V.zipWith func (V.fromList allCoord) v
 
-instance (All IsCoord cs, All Monoid cs, All Semigroup cs) =>
+instance (All IsCoord cs) =>
          TraversableWithIndex (Coord cs) (Grid cs) where
     itraverse func (Grid v) =
         Grid <$> sequenceA (V.zipWith func (V.fromList allCoord) v)
