@@ -101,8 +101,6 @@ magic f =
 takeNat :: (KnownNat n, KnownNat m) :- KnownNat (n - m)
 takeNat = magic (-)
 
-type OneOrHigher x = 1 <= x
-
 instance (1 <= m, KnownNat m) => Bounded (Ordinal m) where
     minBound = Ordinal (Proxy @0)
     maxBound =
