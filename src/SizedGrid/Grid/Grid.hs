@@ -97,6 +97,15 @@ collapseGrid (Grid v) =
                 (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
                 v
 
+gridFromList ::
+     forall cs a. SListI cs
+  => CollapseGrid cs a
+  -> Maybe (Grid cs a)
+gridFromList cg =
+  case (shape :: Shape cs) of
+    ShapeNil    -> Just $ Grid $ V.singleton $ cg
+    ShapeCons _ -> Grid . mconcat <$> traverse (fmap unGrid . gridFromList @(Tail cs)) cg
+
 instance (AllGridSizeKnown cs, ToJSON a, SListI cs) => ToJSON (Grid cs a) where
     toJSON (Grid v) =
         case (shape :: Shape cs) of

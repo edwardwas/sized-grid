@@ -35,22 +35,29 @@ genCoord :: SListI cs => NP Gen cs -> Gen (Coord cs)
 genCoord start = Coord <$> hsequence start
 
 gridTests ::
-       forall cs.
+       forall cs a.
        ( Show (Coord cs)
        , Eq (Coord cs)
        , All IsCoord cs
        , All Monoid cs
        , All Semigroup cs
        , GHC.KnownNat (MaxCoordSize cs)
+       , Show a
+       , Eq a
+       , AllGridSizeKnown cs
        )
     => Gen (Coord cs)
+    -> Gen a
     -> [TestTree]
-gridTests genC =
+gridTests genC genA =
     let tabulateIndex =
             property $ do
                 c <- forAll genC
                 c === index (tabulate id :: Grid cs (Coord cs)) c
-    in [testProperty "Tabulate index" tabulateIndex]
+        collapseUnCollapse = property $ do
+                g :: Grid cs a <- forAll (sequenceA $ pure genA)
+                Just g === gridFromList (collapseGrid g)
+    in [testProperty "Tabulate index" tabulateIndex, testProperty "Collapse UnCollapse" collapseUnCollapse]
 
 main :: IO ()
 main =
@@ -93,11 +100,11 @@ main =
            , testGroup "Coord [Periodic 10, Periodic 20]" coord2
            , testGroup
                  "Grid"
-                 ((gridTests @'[ Periodic 10, Periodic 10] $
-                   genCoord $
+                 ((gridTests @'[ Periodic 10, Periodic 10]
+                   (genCoord $
                    (Periodic <$> Gen.enumBounded) :*
                    (Periodic <$> Gen.enumBounded) :*
-                   Nil) ++
+                   Nil)) (Gen.int $ Range.linear 0 100) ++
                   [ applicativeLaws
                         (Proxy @(Grid '[ Periodic 10, Periodic 10]))
                         (Gen.int $ Range.linear 0 100)
