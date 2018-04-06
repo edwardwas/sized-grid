@@ -116,3 +116,10 @@ instance (AllGridSizeKnown cs, ToJSON a, SListI cs) => ToJSON (Grid cs a) where
                 splitVectorBySize
                     (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
                     v
+
+instance (All IsCoord cs, FromJSON a) => FromJSON (Grid cs a) where
+  parseJSON v = case (shape :: Shape cs) of
+    ShapeNil -> Grid . V.singleton <$> parseJSON v
+    ShapeCons _ -> do
+      a :: [Grid (Tail cs) a] <- parseJSON v
+      return $ Grid $ foldMap unGrid a
