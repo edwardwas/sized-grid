@@ -17,6 +17,7 @@ import           SizedGrid.Coord
 import           SizedGrid.Coord.Class
 
 import           Control.Lens          hiding (index)
+import           Data.Aeson
 import           Data.Distributive
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
@@ -82,7 +83,7 @@ splitVectorBySize n v
 
 collapseGrid ::
        forall cs a.
-       ( All IsCoord cs
+       ( SListI cs
        , AllGridSizeKnown cs
        )
     => Grid cs a
@@ -95,3 +96,14 @@ collapseGrid (Grid v) =
             splitVectorBySize
                 (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
                 v
+
+instance (AllGridSizeKnown cs, ToJSON a, SListI cs) => ToJSON (Grid cs a) where
+    toJSON (Grid v) =
+        case (shape :: Shape cs) of
+            ShapeNil -> toJSON (v V.! 0)
+            ShapeCons _ ->
+                toJSON $
+                map (toJSON . Grid @(Tail cs)) $
+                splitVectorBySize
+                    (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
+                    v
