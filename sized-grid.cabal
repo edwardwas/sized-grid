@@ -25,6 +25,7 @@ library
     , SizedGrid.Grid.Class
     , SizedGrid.Grid.Grid
     , SizedGrid.Grid.Focused
+    , SizedGrid
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.11
@@ -41,7 +42,7 @@ library
     , aeson
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options: -Wall
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
 
 test-suite tests
   type: exitcode-stdio-1.0
@@ -61,3 +62,12 @@ test-suite tests
     , adjunctions
     , aeson
   ghc-options: -O0
+
+test-suite readme
+  type:           exitcode-stdio-1.0
+  default-language: Haskell2010
+  main-is:        README.lhs
+  build-depends:  base
+    , markdown-unlit 
+    , sized-grid
+  ghc-options:    -pgmL markdown-unlit -O0

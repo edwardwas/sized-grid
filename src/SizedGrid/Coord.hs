@@ -15,6 +15,7 @@ import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
 
 import           Control.Applicative   (liftA2)
+import           Control.Applicative   (empty)
 import           Control.Lens          ((^.))
 import           Control.Monad.State
 import           Data.AdditiveGroup
@@ -44,9 +45,14 @@ instance (All ToJSON cs) => ToJSON (Coord cs) where
         hcollapse $ hcmap (Proxy @ToJSON) (\(I x) -> K $ toJSON x) a
 
 instance All FromJSON cs => FromJSON (Coord cs) where
-  parseJSON = withArray "Coord" $ \v -> do
-    let Just a = SOP.fromList $ V.toList v
-    Coord <$> hsequence ( hcmap (Proxy @FromJSON) (\(K x) -> parseJSON x) a)
+    parseJSON =
+        withArray "Coord" $ \v ->
+            case SOP.fromList $ V.toList v of
+                Just a ->
+                    Coord <$>
+                    hsequence
+                        (hcmap (Proxy @FromJSON) (\(K x) -> parseJSON x) a)
+                Nothing -> empty
 
 instance All Eq cs => Eq (Coord cs) where
     Coord a == Coord b =
@@ -170,7 +176,6 @@ vonNeumanPoints ::
      , Num a
      , Ord a
      , All Integral (MapDiff cs)
-     , All AdditiveGroup (MapDiff cs)
      , AllDiffSame a cs
      , All AffineSpace cs
      , Ord (CoordDiff cs)

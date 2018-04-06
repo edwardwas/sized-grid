@@ -18,7 +18,6 @@ import           SizedGrid.Grid.Grid
 import           Test.Utils
 
 import           Data.Functor.Rep
-import           Data.Semigroup           (Semigroup)
 import           Generics.SOP             hiding (S, Z)
 import           GHC.TypeLits
 import qualified GHC.TypeLits             as GHC
@@ -39,8 +38,6 @@ gridTests ::
        ( Show (Coord cs)
        , Eq (Coord cs)
        , All IsCoord cs
-       , All Monoid cs
-       , All Semigroup cs
        , GHC.KnownNat (MaxCoordSize cs)
        , Show a
        , Eq a
