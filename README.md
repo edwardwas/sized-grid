@@ -26,6 +26,10 @@ The core datatype of this library is `Grid (cs :: '[k]) (a :: *)`. `cs` is a typ
 
 `HardWrap` and `Periodic` are both instances of `AffineSpace`, which their `Diff` being `Integer`. This means there are many occasion where one doesn't have to work directly with these values (which can be cumbersome) but instead work with their differences as regular numbers.
 
+The last type value of `Grid` is the type of each element. 
+
+The other main type is `Coord cs`, where `cs` is, again, a type level list of coordinate types. For example, `Coord '[Periodic 3, HardWrap 4]` is a coordinate in a 3 by 4 2D space. The different types (`Periodic` and `HardWrap`) tell how to handle combining theses different numbers. `Coord cs` is an instance of `Semigroup`, `Monoid` and `AdditiveGroup` if each of the coordinates is also an instance of that typeclass. 
+
 ```haskell
 main = return ()
 ```
