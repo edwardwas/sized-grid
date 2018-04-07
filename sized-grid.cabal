@@ -67,6 +67,8 @@ test-suite tests
     , lens
     , adjunctions
     , aeson
+    , HUnit
+    , tasty-hunit
   ghc-options: -O0
 
 test-suite readme

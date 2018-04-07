@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
@@ -7,13 +8,24 @@ module Test.Utils where
 import           Data.AdditiveGroup
 import           Data.Aeson
 import           Data.AffineSpace
+import           Data.Functor.Classes
 import           Data.Proxy
 import           Data.Semigroup
 import           Hedgehog
-import qualified Hedgehog.Gen        as Gen
-import qualified Hedgehog.Range      as Range
+import qualified Hedgehog.Gen         as Gen
+import qualified Hedgehog.Range       as Range
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
+import           Test.Tasty.HUnit
+
+eq1Laws ::
+       forall f. (Eq1 f, Applicative f)
+    => Proxy f
+    -> TestTree
+eq1Laws _ =
+    let nilEq =
+            assertEqual "Nil equal" True $ liftEq (==) (pure ()) (pure @f ())
+    in testGroup "Eq1 Laws" [testCase "Nil Eq" nilEq]
 
 aesonLaws :: (Show a, Eq a, ToJSON a, FromJSON a) => Gen a -> TestTree
 aesonLaws gen =

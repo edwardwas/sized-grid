@@ -107,5 +107,6 @@ main =
                         (Gen.int $ Range.linear 0 100)
                   , aesonLaws (sequenceA $ pure @(Grid '[Periodic 10, Periodic 10] ) $
                       Gen.int $ Range.linear 0 100)
+                  , eq1Laws (Proxy @(Grid '[Periodic 10, Periodic 20]))
                   ])
            ]
