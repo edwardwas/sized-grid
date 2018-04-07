@@ -26,6 +26,7 @@ import           Data.Semigroup
 import           GHC.TypeLits
 import           System.Random
 
+-- | A coordinate with periodic boundaries, as if on a taurus
 newtype Periodic (n :: Nat) = Periodic
     { unPeriodic :: Ordinal n
     } deriving (Eq, Show, Ord)

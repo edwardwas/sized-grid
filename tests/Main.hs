@@ -17,7 +17,9 @@ import           SizedGrid.Grid.Grid
 
 import           Test.Utils
 
+import           Control.Monad            (replicateM)
 import           Data.Functor.Rep
+import           Data.Proxy
 import           Generics.SOP             hiding (S, Z)
 import           GHC.TypeLits
 import qualified GHC.TypeLits             as GHC
@@ -34,7 +36,7 @@ genCoord :: SListI cs => NP Gen cs -> Gen (Coord cs)
 genCoord start = Coord <$> hsequence start
 
 gridTests ::
-       forall cs a.
+       forall cs a x y.
        ( Show (Coord cs)
        , Eq (Coord cs)
        , All IsCoord cs
@@ -42,6 +44,7 @@ gridTests ::
        , Show a
        , Eq a
        , AllGridSizeKnown cs
+       , cs ~ '[x,y]
        )
     => Gen (Coord cs)
     -> Gen a
@@ -51,10 +54,20 @@ gridTests genC genA =
             property $ do
                 c <- forAll genC
                 c === index (tabulate id :: Grid cs (Coord cs)) c
-        collapseUnCollapse = property $ do
+        collapseUnCollapse =
+            property $ do
                 g :: Grid cs a <- forAll (sequenceA $ pure genA)
                 Just g === gridFromList (collapseGrid g)
-    in [testProperty "Tabulate index" tabulateIndex, testProperty "Collapse UnCollapse" collapseUnCollapse]
+        uncollapseCollapse =
+            property $ do
+                cg :: [[a]] <-
+                    replicateM (fromIntegral $ natVal (Proxy @(CoordSized x))) $
+                    replicateM (fromIntegral $ natVal (Proxy @(CoordSized y))) $ forAll genA
+                Just cg === (collapseGrid <$> gridFromList @cs cg)
+    in [ testProperty "Tabulate index" tabulateIndex
+       , testProperty "Collapse UnCollapse" collapseUnCollapse
+       , testProperty "UnCollapse and Collapse" uncollapseCollapse
+       ]
 
 main :: IO ()
 main =
@@ -97,15 +110,15 @@ main =
            , testGroup "Coord [Periodic 10, Periodic 20]" coord2
            , testGroup
                  "Grid"
-                 ((gridTests @'[ Periodic 10, Periodic 10]
+                 ((gridTests @'[ Periodic 10, Periodic 11]
                    (genCoord $
                    (Periodic <$> Gen.enumBounded) :*
                    (Periodic <$> Gen.enumBounded) :*
                    Nil)) (Gen.int $ Range.linear 0 100) ++
                   [ applicativeLaws
-                        (Proxy @(Grid '[ Periodic 10, Periodic 10]))
+                        (Proxy @(Grid '[ Periodic 10, Periodic 11]))
                         (Gen.int $ Range.linear 0 100)
-                  , aesonLaws (sequenceA $ pure @(Grid '[Periodic 10, Periodic 10] ) $
+                  , aesonLaws (sequenceA $ pure @(Grid '[Periodic 10, Periodic 11] ) $
                       Gen.int $ Range.linear 0 100)
                   , eq1Laws (Proxy @(Grid '[Periodic 10, Periodic 20]))
                   ])

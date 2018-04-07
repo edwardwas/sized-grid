@@ -25,6 +25,7 @@ import           Generics.SOP
 import           GHC.Exts
 import qualified GHC.TypeLits          as GHC
 
+-- | A multi dimensional sized grid
 newtype Grid (cs :: [*]) a = Grid
     { unGrid :: V.Vector a
     } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1)
@@ -62,9 +63,11 @@ instance (All IsCoord cs) =>
     itraverse func (Grid v) =
         Grid <$> sequenceA (V.zipWith func (V.fromList allCoord) v)
 
+-- | The first element of a type level list
 type family Head xs where
   Head (x ': xs) = x
 
+-- | All but the first elements of a type level list
 type family Tail xs where
   Tail (x ': xs) = xs
 
@@ -73,8 +76,10 @@ type family CollapseGrid cs a where
   CollapseGrid (c ': cs) a = [CollapseGrid cs a]
 
 type family AllGridSizeKnown cs :: Constraint where
-  AllGridSizeKnown '[] = ()
-  AllGridSizeKnown cs = (GHC.KnownNat (MaxCoordSize (Tail cs)), AllGridSizeKnown (Tail cs))
+    AllGridSizeKnown '[] = ()
+    AllGridSizeKnown cs = ( GHC.KnownNat (CoordSized (Head cs))
+                          , GHC.KnownNat (MaxCoordSize (Tail cs))
+                          , AllGridSizeKnown (Tail cs))
 
 splitVectorBySize :: Int -> V.Vector a -> [V.Vector a]
 splitVectorBySize n v
@@ -99,13 +104,17 @@ collapseGrid (Grid v) =
                 v
 
 gridFromList ::
-     forall cs a. SListI cs
-  => CollapseGrid cs a
-  -> Maybe (Grid cs a)
+       forall cs a. (SListI cs, AllGridSizeKnown cs)
+    => CollapseGrid cs a
+    -> Maybe (Grid cs a)
 gridFromList cg =
-  case (shape :: Shape cs) of
-    ShapeNil    -> Just $ Grid $ V.singleton $ cg
-    ShapeCons _ -> Grid . mconcat <$> traverse (fmap unGrid . gridFromList @(Tail cs)) cg
+    case (shape :: Shape cs) of
+        ShapeNil -> Just $ Grid $ V.singleton $ cg
+        ShapeCons _ ->
+            if length cg == fromIntegral (GHC.natVal (Proxy @(CoordSized (Head cs))))
+                then Grid . mconcat <$>
+                     traverse (fmap unGrid . gridFromList @(Tail cs)) cg
+                else Nothing
 
 instance (AllGridSizeKnown cs, ToJSON a, SListI cs) => ToJSON (Grid cs a) where
     toJSON (Grid v) =

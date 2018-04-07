@@ -26,6 +26,9 @@ import           Data.Proxy
 import           GHC.TypeLits
 import           System.Random
 
+-- | An Ordinal can only hold m different values, ususally corresponding to 0 .. m - 1. We store it here using a `Proxy` of a type level number and use constraints to keep the required invariants.
+--
+-- Desprite represeting a number, Ordinal is not an instance of Num and many functions (such as negate) would only be partial
 data Ordinal m where
   Ordinal :: (KnownNat n, KnownNat m, (n + 1 <=? m) ~ 'True ) => Proxy n -> Ordinal m
 
@@ -44,6 +47,7 @@ instance (1 <= m, KnownNat m) => Random (Ordinal m) where
         in (toEnum n, g')
     random = randomR (minBound, maxBound)
 
+-- | Convert a normal integral to an ordinal. If it is outside the range (< 0 or >= m), Nothing is returned.
 numToOrdinal ::
        forall a m. (KnownNat m, Integral a)
     => a
@@ -56,6 +60,7 @@ numToOrdinal n =
                 SFalse -> Nothing
                 STrue  -> Just $ Ordinal p) \\ plusNat @n @1
 
+-- | Transform an ordinal to a given number
 ordinalToNum :: Num a => Ordinal m -> a
 ordinalToNum (Ordinal p) = fromIntegral $ natVal p
 

@@ -23,6 +23,7 @@ import           Data.Semigroup        (Semigroup (..))
 import           GHC.TypeLits
 import           System.Random         (Random (..))
 
+-- | A coordinate that clamps its numbers
 newtype HardWrap (n :: Nat) = HardWrap
     { unHardWrap :: Ordinal n
     } deriving (Eq,Show,Ord)
