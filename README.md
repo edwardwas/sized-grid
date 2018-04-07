@@ -149,7 +149,7 @@ glider offset = pure Dead
 We can now make our glider run!
 
 ```haskell
-main = 
+run = 
     let start :: Grid '[Periodic 10, Periodic 10] TileState 
         start = glider (mempty .+^ (3,3))
         doStep grid = do
@@ -158,4 +158,6 @@ main =
           _ <- getLine
           doStep $ applyRule gameOfLife grid
     in doStep start
+
+main = return ()
 ```

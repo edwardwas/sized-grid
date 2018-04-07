@@ -11,11 +11,14 @@
 
 module SizedGrid.Coord
     ( Length
-    , Coord
+    , Coord(..)
     , CoordDiff
     , AllDiffSame
+    , MaxCoordSize
     , moorePoints
     , vonNeumanPoints
+    , allCoord
+    , coordPosition
     ) where
 
 import           SizedGrid.Coord.Class
