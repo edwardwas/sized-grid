@@ -9,7 +9,14 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module SizedGrid.Coord where
+module SizedGrid.Coord
+    ( Length
+    , Coord
+    , CoordDiff
+    , AllDiffSame
+    , moorePoints
+    , vonNeumanPoints
+    ) where
 
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
@@ -31,10 +38,12 @@ import           GHC.Generics          (Generic)
 import qualified GHC.TypeLits          as GHC
 import           System.Random         (Random (..))
 
+-- | Length of a type level list
 type family Length cs where
   Length '[] = 0
   Length (c ': cs) = (GHC.+) 1 (Length cs)
 
+-- | A multideminsion coordinate
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Show, Generic, Ord)
 
@@ -161,6 +170,7 @@ type family AllDiffSame a xs :: Constraint where
   AllDiffSame _ '[] = ()
   AllDiffSame a (x ': xs) = (Diff x ~ a, AllDiffSame a xs)
 
+--
 moorePoints ::
      forall a cs. (Enum a, Num a, AllDiffSame a cs, All AffineSpace cs)
   => a
