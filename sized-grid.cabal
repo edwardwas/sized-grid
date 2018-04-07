@@ -26,7 +26,8 @@ library
     , SizedGrid.Grid.Grid
     , SizedGrid.Grid.Focused
     , SizedGrid
-  other-modules:       SizedGrid.Internal.Type
+  other-modules:       
+      SizedGrid.Internal.Type
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.11
     , lens
