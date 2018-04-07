@@ -21,6 +21,10 @@ class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
   maxCoordSize :: proxy c -> Integer
   maxCoordSize p = natVal (sCoordSized p) - 1
 
+instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
+    type CoordSized (Ordinal n) = n
+    asOrdinal = id
+
 overOrdinal ::
        IsCoord c
     => (Ordinal (CoordSized c) -> Ordinal (CoordSized c))
