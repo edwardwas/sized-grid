@@ -1,12 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveTraversable     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module SizedGrid.Grid.Grid where
 
@@ -16,6 +17,7 @@ import           SizedGrid.Coord.Class
 import           Control.Lens          hiding (index)
 import           Data.Aeson
 import           Data.Distributive
+import           Data.Functor.Classes
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
 import qualified Data.Vector           as V
@@ -23,9 +25,9 @@ import           Generics.SOP
 import           GHC.Exts
 import qualified GHC.TypeLits          as GHC
 
-data Grid (cs :: [*]) a = Grid
+newtype Grid (cs :: [*]) a = Grid
     { unGrid :: V.Vector a
-    } deriving (Eq, Show, Functor, Foldable, Traversable)
+    } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1)
 
 instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
     pure =
