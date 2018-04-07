@@ -73,4 +73,7 @@ test-suite readme
     , distributive
     , adjunctions
     , vector-space
+    , comonad
+    , lens
+    , ansi-terminal
   ghc-options:    -pgmL markdown-unlit -O0
