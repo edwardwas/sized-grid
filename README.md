@@ -116,7 +116,8 @@ displayTileState :: TileState -> Char
 displayTileState Alive = '#'
 displayTileState Dead = '.'
 
-displayGrid :: KnownNat (CoordSized y) => Grid '[x, y] TileState -> String
+displayGrid :: (KnownNat (CoordSized x), KnownNat (CoordSized y)) => 
+      Grid '[x, y] TileState -> String
 displayGrid = unlines . collapseGrid . fmap displayTileState
 ```
 
