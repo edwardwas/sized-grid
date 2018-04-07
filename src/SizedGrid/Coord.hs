@@ -100,9 +100,14 @@ type family CoordDiff (cs :: [k]) :: *
 
 type instance CoordDiff '[] = ()
 type instance CoordDiff '[a] = Identity (Diff a)
-type instance CoordDiff '[a,b] = (Diff a, Diff b)
-type instance CoordDiff '[a,b,c] = (Diff a, Diff b, Diff c)
-type instance CoordDiff '[a,b,c,d] = (Diff a, Diff b, Diff c, Diff d)
+type instance CoordDiff '[a, b] = (Diff a, Diff b)
+type instance CoordDiff '[a, b, c] = (Diff a, Diff b, Diff c)
+type instance CoordDiff '[a, b, c, d] =
+     (Diff a, Diff b, Diff c, Diff d)
+type instance CoordDiff '[a, b, c, d, e] =
+     (Diff a, Diff b, Diff c, Diff d, Diff e)
+type instance CoordDiff '[a, b, c, d, e, f] =
+     (Diff a, Diff b, Diff c, Diff d, Diff e, Diff f)
 
 type family MapDiff xs where
   MapDiff '[] = '[]

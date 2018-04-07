@@ -70,5 +70,7 @@ test-suite readme
   build-depends:  base
     , markdown-unlit 
     , sized-grid
+    , distributive
+    , adjunctions
     , vector-space
   ghc-options:    -pgmL markdown-unlit -O0
