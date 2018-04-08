@@ -1,7 +1,9 @@
 {-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE PolyKinds         #-}
+{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
@@ -21,6 +23,10 @@ class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
   type CoordSized c :: Nat
   -- | As each coord represents a finite number of states, it must be isomorphic to an Ordinal
   asOrdinal :: Iso' c (Ordinal (CoordSized c))
+  -- | The origin. If c is an instance of `Monoid`, this should be mempty
+  zeroPosition :: c
+  default zeroPosition :: Monoid c => c
+  zeroPosition = mempty
   -- | Retrive a `Proxy` of the size
   sCoordSized :: proxy c -> Proxy (CoordSized c)
   sCoordSized _ = Proxy
@@ -31,6 +37,7 @@ class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
 instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
     type CoordSized (Ordinal n) = n
     asOrdinal = id
+    zeroPosition = Ordinal (Proxy @0)
 
 -- | Enumerate all possible values of a coord, in order
 allCoordLike :: IsCoord c => [c]
