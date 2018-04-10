@@ -9,17 +9,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module SizedGrid.Coord
-    ( Length
-    , Coord(..)
-    , CoordDiff
-    , AllDiffSame
-    , MaxCoordSize
-    , moorePoints
-    , vonNeumanPoints
-    , allCoord
-    , coordPosition
-    ) where
+module SizedGrid.Coord where
 
 import           SizedGrid.Coord.Class
 import           SizedGrid.Ordinal
@@ -32,6 +22,7 @@ import           Data.AdditiveGroup
 import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Functor.Identity
+import           Data.List             (intercalate)
 import           Data.Semigroup        (Semigroup (..))
 import qualified Data.Vector           as V
 import           Generics.SOP          hiding (Generic, S, Z)
@@ -48,7 +39,26 @@ type family Length cs where
 
 -- | A multideminsion coordinate
 newtype Coord cs = Coord {unCoord :: NP I cs}
-  deriving (Show, Generic, Ord)
+  deriving (Generic)
+
+instance All Eq cs => Eq (Coord cs) where
+    Coord a == Coord b =
+        and $
+        hcollapse $ hcliftA2 (Proxy :: Proxy Eq) (\(I x) (I y) -> K (x == y)) a b
+
+instance (All Eq cs, All Ord cs) => Ord (Coord cs) where
+    compare (Coord a) (Coord b) =
+        mconcat $
+        hcollapse $
+        hcliftA2 (Proxy :: Proxy Ord) (\(I x) (I y) -> K (compare x y)) a b
+
+instance All Show cs => Show (Coord cs) where
+    show (Coord a) =
+        "Coord [" ++
+        intercalate
+            ", "
+            (hcollapse $ hcliftA (Proxy :: Proxy Show) (\(I x) -> K $ show x) a) ++
+        "]"
 
 instance (All ToJSON cs) => ToJSON (Coord cs) where
     toJSON (Coord a) =
@@ -66,12 +76,6 @@ instance All FromJSON cs => FromJSON (Coord cs) where
                         (hcmap (Proxy @FromJSON) (\(K x) -> parseJSON x) a)
                 Nothing -> empty
 
-instance All Eq cs => Eq (Coord cs) where
-    Coord a == Coord b =
-        let helper :: All Eq xs => NP I xs -> NP I xs -> Bool
-            helper Nil Nil                 = True
-            helper (I x :* xs) (I y :* ys) = x == y && helper xs ys
-        in helper a b
 
 instance All Semigroup cs => Semigroup (Coord cs) where
   Coord a <> Coord b = Coord $ hcliftA2 (Proxy :: Proxy Semigroup) (liftA2 (<>)) a b

@@ -3,7 +3,7 @@
 
 name:                sized-grid
 version:             0.1.0.0
--- synopsis:            
+synopsis:            Multidimensional grids with sized specified at compile time
 -- description:         
 license:             MIT
 license-file:        LICENSE
@@ -69,7 +69,6 @@ test-suite tests
     , aeson
     , HUnit
     , tasty-hunit
-  ghc-options: -O0
 
 test-suite readme
   type:           exitcode-stdio-1.0
@@ -84,4 +83,4 @@ test-suite readme
     , comonad
     , lens
     , ansi-terminal
-  ghc-options:    -pgmL markdown-unlit -O0
+  ghc-options:    -pgmL markdown-unlit 

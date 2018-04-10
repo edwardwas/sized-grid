@@ -22,7 +22,7 @@ import qualified GHC.TypeLits          as GHC
 data FocusedGrid cs a = FocusedGrid
     { focusedGrid         :: Grid cs a
     , focusedGridPosition :: Coord cs
-    } deriving (Eq,Show,Functor,Foldable,Traversable)
+    } deriving (Functor,Foldable,Traversable)
 
 instance ( GHC.KnownNat (MaxCoordSize cs)
          , All IsCoord cs
