@@ -66,6 +66,6 @@ magic f =
         (Magic Dict)
         (natVal (Proxy :: Proxy n) `f` natVal (Proxy :: Proxy m))
 
--- | Runtime proof that n - m is an insance of KnownNat is n and m are
+-- | Runtime proof that n - m is an insance of KnownNat if n and m are
 takeNat :: (KnownNat n, KnownNat m) :- KnownNat (n - m)
 takeNat = magic (-)

@@ -19,6 +19,7 @@ import           Data.Semigroup        (Semigroup (..))
 import           Generics.SOP
 import qualified GHC.TypeLits          as GHC
 
+-- | Similar to `Grid`, but this has a focus on a certain square. Becuase of this we loose some instances, such as `Applicative`, but we gain a `Comonad` and `ComonadStore` instance. We can convert between a focused and unfocused list using facilites in `IsGrid`
 data FocusedGrid cs a = FocusedGrid
     { focusedGrid         :: Grid cs a
     , focusedGridPosition :: Coord cs
@@ -46,4 +47,3 @@ instance ( GHC.KnownNat (MaxCoordSize cs)
     peeks func (FocusedGrid g p) = index g (func p)
     seek p (FocusedGrid g _) = FocusedGrid g p
     seeks func (FocusedGrid g p) = FocusedGrid g $ func p
-

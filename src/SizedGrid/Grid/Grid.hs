@@ -71,22 +71,26 @@ type family Head xs where
 type family Tail xs where
   Tail (x ': xs) = xs
 
+-- | Given a grid type, give back a series of nested lists repesenting the grid. The lists will have a number of layers equal to the dimensionality.
 type family CollapseGrid cs a where
   CollapseGrid '[] a = a
   CollapseGrid (c ': cs) a = [CollapseGrid cs a]
 
+-- | A Constraint that all grid sizes are instances of `KnownNat`
 type family AllGridSizeKnown cs :: Constraint where
     AllGridSizeKnown '[] = ()
     AllGridSizeKnown cs = ( GHC.KnownNat (CoordSized (Head cs))
                           , GHC.KnownNat (MaxCoordSize (Tail cs))
                           , AllGridSizeKnown (Tail cs))
 
+-- | Convert a vector into a list of `Vector`s, where all the elements of the list have the given size.
 splitVectorBySize :: Int -> V.Vector a -> [V.Vector a]
 splitVectorBySize n v
   | V.length v >= n = V.take n v : splitVectorBySize n (V.drop n v)
   | V.null v = []
   | otherwise = [v]
 
+-- | Convert a grid to a series of nested lists. This removes type level information, but it is sometimes easier to work with lists
 collapseGrid ::
        forall cs a.
        ( SListI cs
@@ -103,6 +107,7 @@ collapseGrid (Grid v) =
                 (fromIntegral $ GHC.natVal (Proxy @(MaxCoordSize (Tail cs))))
                 v
 
+-- | Convert a series of nested lists to a grid. If the size of the grid does not match the size of lists this will be `Nothing`
 gridFromList ::
        forall cs a. (SListI cs, AllGridSizeKnown cs)
     => CollapseGrid cs a
