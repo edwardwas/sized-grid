@@ -19,9 +19,13 @@ import           Data.Semigroup         hiding (All (..))
 import           Generics.SOP
 import qualified GHC.TypeLits           as GHC
 
+-- | Conversion between `Grid` and `FocusedGrid` and access grids at a `Coord`
 class IsGrid cs grid | grid -> cs where
+  -- | Get the element at a grid location. This is a lens because we know it must exist
   gridIndex :: Coord cs -> Lens' (grid a) a
+  -- | Convert to, or run a function over, a `Grid`
   asGrid :: Lens' (grid a) (Grid cs a)
+  -- | Convert to, or run a function over, a `FocusedGrid`
   asFocusedGrid :: Lens' (grid a) (FocusedGrid cs a)
 
 instance ( GHC.KnownNat (MaxCoordSize cs)

@@ -112,6 +112,7 @@ instance (All Random cs) => Random (Coord cs) where
                     g
         in (Coord c, g')
 
+-- | The type of difference between two coords. A n-dimensional coord should have a `Diff` of an n-tuple of `Integers`. We use `Identity` and our 1-tuple. Unfortuantly, each instance is manual at the moment.
 type family CoordDiff (cs :: [k]) :: *
 
 type instance CoordDiff '[] = ()
@@ -125,6 +126,7 @@ type instance CoordDiff '[a, b, c, d, e] =
 type instance CoordDiff '[a, b, c, d, e, f] =
      (Diff a, Diff b, Diff c, Diff d, Diff e, Diff f)
 
+-- | Apply `Diff` to each element of a type level list. This is required as type families can't be partially applied.
 type family MapDiff xs where
   MapDiff '[] = '[]
   MapDiff (x ': xs) = Diff x ': MapDiff xs
@@ -149,15 +151,18 @@ instance ( All AffineSpace cs
               SOP (SOP.Z bs) -> Coord $ helper a bs
               _ -> error "Error in adding Coord. Should be unreachable"
 
+-- | Generate all possible coords in order
 allCoord ::
        forall cs. (All IsCoord cs)
     => [Coord cs]
 allCoord = Coord <$> hsequence (hcpure (Proxy :: Proxy IsCoord) allCoordLike)
 
+-- | The number of elements a coord can have. This is equal to the product of the `CoordSized` of each element
 type family MaxCoordSize (cs :: [k]) :: GHC.Nat where
   MaxCoordSize '[] = 1
   MaxCoordSize (c ': cs) = (CoordSized c) GHC.* (MaxCoordSize cs)
 
+-- | Convert a `Coord` to its position in a vector
 coordPosition :: (All IsCoord cs) => Coord cs -> Int
 coordPosition (Coord a) =
     let helper :: (All IsCoord xs) => NP I xs -> Integer
@@ -173,11 +178,12 @@ coordPosition (Coord a) =
                 (\(I (_ :: a)) -> K $ 1 + maxCoordSize (Proxy :: Proxy a))
     in fromIntegral $ helper a
 
+-- | All Diffs of the members of the list must be equal
 type family AllDiffSame a xs :: Constraint where
   AllDiffSame _ '[] = ()
   AllDiffSame a (x ': xs) = (Diff x ~ a, AllDiffSame a xs)
 
---
+-- | Calculate the Moore neighbourhood around a point. Includes the center
 moorePoints ::
      forall a cs. (Enum a, Num a, AllDiffSame a cs, All AffineSpace cs)
   => a
@@ -192,6 +198,7 @@ moorePoints n (Coord cs) =
         return (I (a .+^ delta) :* next)
   in map Coord $ helper cs
 
+-- | Calculate the von Neuman neighbourhood around a point. Includes the center
 vonNeumanPoints ::
      forall a cs.
      ( Enum a

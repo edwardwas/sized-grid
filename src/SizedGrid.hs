@@ -1,6 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
-module SizedGrid (module X, All, SListI, Compose, I(..)) where
+module SizedGrid
+    (
+      module X
+      -- * Rexported for generics-sop
+    , All
+    , SListI
+    , Compose
+    , I(..)
+    ) where
 
 import           SizedGrid.Coord          as X
 import           SizedGrid.Coord.Class    as X

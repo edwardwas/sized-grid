@@ -28,6 +28,20 @@ import qualified Hedgehog.Gen             as Gen
 import qualified Hedgehog.Range           as Range
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
+import           Test.Tasty.HUnit
+
+assertOrderd :: Ord a => [a] -> Assertion
+assertOrderd =
+    let helper []     = True
+        helper (x:xs) = all (x <=) xs && helper xs
+    in assertBool "Ordered" . helper
+
+testAllCoordOrdered ::
+       forall cs proxy. (All Eq cs, All Ord cs, All IsCoord cs)
+    => proxy (Coord cs)
+    -> TestTree
+testAllCoordOrdered _ =
+    testCase "allCoord is ordered" $ assertOrderd (allCoord @cs)
 
 genPeriodic :: (1 <= n, GHC.KnownNat n) => Gen (Periodic n)
 genPeriodic = Periodic <$> Gen.enumBounded
@@ -88,7 +102,7 @@ main =
                         ((HardWrap <$> Gen.enumBounded) :*
                          (Periodic <$> Gen.enumBounded) :*
                          Nil)
-            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g]
+            in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g, testAllCoordOrdered g]
         coord2 =
             let g :: Gen (Coord '[ Periodic 10, Periodic 20]) =
                     genCoord
@@ -100,6 +114,7 @@ main =
                , affineSpaceLaws g
                , additiveGroupLaws g
                , aesonLaws g
+               , testAllCoordOrdered g
                ]
     in defaultMain $
        testGroup
