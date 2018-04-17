@@ -1,12 +1,19 @@
 name: sized-grid
 version: 0.1.0.0
 cabal-version: >=1.10
+category: Data
 build-type: Simple
 license: MIT
 license-file: LICENSE
 maintainer: ed@wastell.co.uk
+bug-reports: https://github.com/edwardwas/sized-grid
 synopsis: Multidimensional grids with sized specified at compile time
 author: edwardwas
+homepage: https://github.com/edwardwas/sized-grid
+description:
+  `size-grid` allows you to make finite sized grids and have their size and shape confirmed at compile time
+  .
+  Consult the readme for a short tutorial and explanation
 extra-source-files:
     ChangeLog.md
 
