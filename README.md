@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/edwardwas/sized-grid.svg?branch=master)](https://travis-ci.org/edwardwas/sized-grid)
 
+![Hackage](https://img.shields.io/hackage/v/sized-grid)
+
 sized-grid
 ===========
 
