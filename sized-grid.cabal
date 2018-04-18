@@ -6,16 +6,18 @@ build-type: Simple
 license: MIT
 license-file: LICENSE
 maintainer: ed@wastell.co.uk
-bug-reports: https://github.com/edwardwas/sized-grid
+bug-reports: https://github.com/edwardwas/sized-grid/issues
 synopsis: Multidimensional grids with sized specified at compile time
 author: edwardwas
 homepage: https://github.com/edwardwas/sized-grid
 description:
   `size-grid` allows you to make finite sized grids and have their size and shape confirmed at compile time
   .
-  Consult the readme for a short tutorial and explanation
+  Consult the readme for a short tutorial and explanation.
 extra-source-files:
     ChangeLog.md
+    README.lhs
+    README.md
 
 library
     exposed-modules:
@@ -29,7 +31,7 @@ library
         SizedGrid.Grid.Focused
         SizedGrid
     build-depends:
-        base >=4.8 && <4.12,
+        base >=4.9 && <4.12,
         lens >=4.16.1 && <4.17,
         vector >=0.12.0.1 && <0.13,
         vector-space ==0.13.*,
@@ -51,7 +53,7 @@ test-suite  tests
     type: exitcode-stdio-1.0
     main-is: Main.hs
     build-depends:
-        base >=4.8 && <4.12,
+        base >=4.9 && <4.12,
         sized-grid -any,
         hedgehog >=0.5.3 && <0.6,
         tasty >=1.0.1.1 && <1.1,
@@ -71,7 +73,7 @@ test-suite  readme
     type: exitcode-stdio-1.0
     main-is: README.lhs
     build-depends:
-        base >=4.10.1.0 && <4.11,
+        base >=4.9 && <4.12,
         markdown-unlit >=0.5.0 && <0.6,
         sized-grid -any,
         distributive >=0.5.3 && <0.6,

@@ -17,7 +17,7 @@ import           GHC.TypeLits
 
 -- | Everything that can be uses as a Coordinate. The only required function is `asOrdinal` and the type instance of `CoordSized`: the rest can be derived automatically.
 --
--- This is kind * -> Constraint for ease of use later. There is some argument that it should be of kind (Nat -> *) -> Constraint and we can remove `CoordSized`
+-- This is kind * -> Constraint for ease of use later. There is some argument that it should be of kind (Nat -> *) -> Constraint and we could remove `CoordSized`, but that has other complications
 class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
   -- | The maximum number of values that a Coord can take
   type CoordSized c :: Nat

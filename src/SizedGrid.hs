@@ -2,6 +2,7 @@
 
 module SizedGrid
     (
+      -- This reexports all of SizedGrid. Import this and you're godo to go
       module X
       -- * Rexported for generics-sop
     , All
