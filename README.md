@@ -24,6 +24,8 @@ The last type value of `Grid` is the type of each element.
 
 The other main type is `Coord cs`, where `cs` is, again, a type level list of coordinate types. For example, `Coord '[Periodic 3, HardWrap 4]` is a coordinate in a 3 by 4 2D space. The different types (`Periodic` and `HardWrap`) tell how to handle combining theses different numbers. `Coord cs` is an instance of `Semigroup`, `Monoid` and `AdditiveGroup` as long as each of the coordinates is also an instance of that typeclass. `Coord` is also an instance of of `AffineSpace`, where `Diff` is a n-tuple, meaning we can pattern match and do all sorts of nice things.
 
+For working directly with `Coord`s, one can construct them with `singleCoord` and `appendCoord` and consume and update them with `coordHead` and `coordTail`. They are also instances of `FieldN` from lens, allowing one to directly update or get a certain dimension.
+
 There is a deliberately small number of functions that work over `Grid`: we instead opt for using typeclasses to create the required functionality. `Grid` is an instance of the following types (with some required constraints):
 
 * `Functor`: Update all values in the grid with the same function
