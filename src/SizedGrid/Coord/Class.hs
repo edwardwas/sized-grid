@@ -1,11 +1,13 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE PolyKinds         #-}
-{-# LANGUAGE TypeApplications  #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module SizedGrid.Coord.Class where
 

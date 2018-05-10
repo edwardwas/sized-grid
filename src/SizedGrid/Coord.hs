@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -16,12 +17,11 @@ import           SizedGrid.Ordinal
 
 import           Control.Applicative   (liftA2)
 import           Control.Applicative   (empty)
-import           Control.Lens          ((^.))
+import           Control.Lens          hiding (from, to)
 import           Control.Monad.State
 import           Data.AdditiveGroup
 import           Data.Aeson
 import           Data.AffineSpace
-import           Data.Functor.Identity
 import           Data.List             (intercalate)
 import           Data.Semigroup        (Semigroup (..))
 import qualified Data.Vector           as V
@@ -40,6 +40,9 @@ type family Length cs where
 -- | A multideminsion coordinate
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Generic)
+
+_WrappedCoord :: Lens' (Coord cs) (NP I cs)
+_WrappedCoord f (Coord n) = Coord <$> f n
 
 instance All Eq cs => Eq (Coord cs) where
     Coord a == Coord b =
@@ -76,7 +79,6 @@ instance All FromJSON cs => FromJSON (Coord cs) where
                         (hcmap (Proxy @FromJSON) (\(K x) -> parseJSON x) a)
                 Nothing -> empty
 
-
 instance All Semigroup cs => Semigroup (Coord cs) where
   Coord a <> Coord b = Coord $ hcliftA2 (Proxy :: Proxy Semigroup) (liftA2 (<>)) a b
 
@@ -111,6 +113,37 @@ instance (All Random cs) => Random (Coord cs) where
                          ma)
                     g
         in (Coord c, g')
+
+-- | Get the first element of a coord. Thanks to type level information, we can write this as a total `Lens`
+coordHead :: Lens (Coord (a ': as)) (Coord (a' ': as)) a a'
+coordHead f (Coord (I a :* as)) = (\a' -> Coord (I a' :* as)) <$> f a
+
+-- | A `Lens` into the the tail of `Coord`
+coordTail :: Lens (Coord (a ': as)) (Coord (a ': as')) (Coord as) (Coord as')
+coordTail f (Coord (a :* as)) = (\(Coord as') -> Coord (a :* as')) <$> f (Coord as)
+
+-- | Turn a single element into a one dimensional `Coord`
+singleCoord :: a -> Coord '[a]
+singleCoord a = Coord (I a :* Nil)
+
+-- | Add a new element to a `Coord`. This increases the dimensionality
+appendCoord :: a -> Coord as -> Coord (a ': as)
+appendCoord a (Coord as) = Coord (I a :* as)
+
+instance Field1 (Coord (a ': cs)) (Coord (a' ': cs)) a a' where
+  _1 = coordHead
+
+instance Field2 (Coord (a ': b ': cs)) (Coord (a ': b' ': cs)) b b' where
+  _2 = coordTail . _1
+
+instance Field3 (Coord (a ': b ': c ': cs)) (Coord (a ': b ': c' ': cs)) c c' where
+  _3 = coordTail . _2
+
+instance Field4 (Coord (a ': b ': c ': d ': cs)) (Coord (a ': b ': c ': d' ': cs)) d d' where
+  _4 = coordTail . _3
+
+instance Field5 (Coord (a ': b ': c ': d ': e ': cs)) (Coord (a ': b ': c ': d ': e' ': cs)) e e' where
+  _5 = coordTail . _4
 
 -- | The type of difference between two coords. A n-dimensional coord should have a `Diff` of an n-tuple of `Integers`. We use `Identity` and our 1-tuple. Unfortuantly, each instance is manual at the moment.
 type family CoordDiff (cs :: [k]) :: *
