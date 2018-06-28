@@ -56,6 +56,7 @@ gridTests ::
        , Eq a
        , AllGridSizeKnown cs
        , cs ~ '[x,y]
+       , GHC.KnownNat (MaxCoordSize '[y,x])
        )
     => Gen (Coord cs)
     -> Gen a
@@ -75,10 +76,21 @@ gridTests genC genA =
                     replicateM (fromIntegral $ natVal (Proxy @(CoordSized x))) $
                     replicateM (fromIntegral $ natVal (Proxy @(CoordSized y))) $ forAll genA
                 Just cg === (collapseGrid <$> gridFromList @cs cg)
+        doubleTranspose = property $ do
+            g :: Grid cs a <- forAll (sequenceA $ pure genA)
+            g === transposeGrid (transposeGrid g)
     in [ testProperty "Tabulate index" tabulateIndex
        , testProperty "Collapse UnCollapse" collapseUnCollapse
        , testProperty "UnCollapse and Collapse" uncollapseCollapse
+       , testProperty "Transpose twice is id" doubleTranspose
        ]
+
+twoDimensionalCoordTests :: (cs ~ '[x,y], All Show cs, All Eq cs) => Gen (Coord cs) -> [TestTree]
+twoDimensionalCoordTests genC =
+  let doubleTranspose = property $ do
+          c <- forAll genC
+          c === tranposeCoord (tranposeCoord c)
+  in [testProperty "Transpose twice is id" doubleTranspose]
 
 coordCreationTests ::
      (All Show cs, All Eq cs, Eq a, Show a, Show c, Eq c)
@@ -158,6 +170,11 @@ main =
        , testGroup "HardWrap 20" hardWrap
        , testGroup "Coord [HardWrap 10, Periodic 20]" coord
        , testGroup "Coord [Periodic 10, Periodic 20]" coord2
+       , testGroup "2D Coords" $ twoDimensionalCoordTests
+              (genCoord
+                 ((HardWrap <$> Gen.enumBounded) :*
+                  (Periodic <$> Gen.enumBounded) :*
+                  Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
        , testGroup
            "Coord creation"
            (coordCreationTests

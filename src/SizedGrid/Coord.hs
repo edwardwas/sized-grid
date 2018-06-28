@@ -41,6 +41,7 @@ type family Length cs where
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Generic)
 
+
 _WrappedCoord :: Lens' (Coord cs) (NP I cs)
 _WrappedCoord f (Coord n) = Coord <$> f n
 
@@ -257,3 +258,7 @@ vonNeumanPoints n c =
                      (\(I a) -> K (abs $ fromIntegral a)) $
                  from (min (new .-. c) (c .-. new))) <= n
     in filter helper $ moorePoints n c
+
+-- | Swap x and y for a coord in 2D space
+tranposeCoord :: Coord '[a,b] -> Coord '[b,a]
+tranposeCoord (Coord (a :* b :* Nil)) = Coord (b :* a :* Nil)
