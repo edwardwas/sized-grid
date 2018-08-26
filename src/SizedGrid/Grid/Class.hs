@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -15,7 +16,11 @@ import           SizedGrid.Grid.Grid
 
 import           Control.Lens           hiding (index)
 import           Data.Functor.Rep
+#if MIN_VERSION_base(4,11,0)
+#else
 import           Data.Semigroup         hiding (All (..))
+#endif
+
 import           Generics.SOP
 import qualified GHC.TypeLits           as GHC
 
