@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,7 +11,10 @@ import           Data.Aeson
 import           Data.AffineSpace
 import           Data.Functor.Classes
 import           Data.Proxy
+#if MIN_VERSION_base(4,11,0)
+#else
 import           Data.Semigroup
+#endif
 import           Hedgehog
 import qualified Hedgehog.Gen         as Gen
 import qualified Hedgehog.Range       as Range

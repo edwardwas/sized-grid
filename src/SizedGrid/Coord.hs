@@ -41,7 +41,6 @@ type family Length cs where
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Generic)
 
-
 _WrappedCoord :: Lens' (Coord cs) (NP I cs)
 _WrappedCoord f (Coord n) = Coord <$> f n
 
@@ -262,3 +261,7 @@ vonNeumanPoints n c =
 -- | Swap x and y for a coord in 2D space
 tranposeCoord :: Coord '[a,b] -> Coord '[b,a]
 tranposeCoord (Coord (a :* b :* Nil)) = Coord (b :* a :* Nil)
+
+-- | The zero position for a coord
+zeroCoord :: All IsCoord cs => Coord cs
+zeroCoord = Coord $ hcpure (Proxy :: Proxy IsCoord) (I $ zeroPosition)
