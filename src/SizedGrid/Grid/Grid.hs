@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -29,6 +31,9 @@ import qualified GHC.TypeLits          as GHC
 newtype Grid (cs :: [*]) a = Grid
   { unGrid :: V.Vector a
   } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1)
+
+singleGridIso :: Iso' (Grid '[] a) a
+singleGridIso = iso (\(Grid v) -> V.head v) (Grid . V.singleton)
 
 instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
   pure =
@@ -79,6 +84,9 @@ type family AllGridSizeKnown cs :: Constraint where
   AllGridSizeKnown cs = ( GHC.KnownNat (CoordSized (Head cs))
                         , GHC.KnownNat (MaxCoordSize (Tail cs))
                         , AllGridSizeKnown (Tail cs))
+
+constantGrid :: forall cs a . GHC.KnownNat (MaxCoordSize cs) => a -> Grid cs a
+constantGrid = Grid . V.replicate (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
 
 -- | Convert a vector into a list of `Vector`s, where all the elements of the list have the given size.
 splitVectorBySize :: Int -> V.Vector a -> [V.Vector a]
@@ -143,3 +151,23 @@ transposeGrid ::
   => Grid '[ w, h] a
   -> Grid '[ h, w] a
 transposeGrid g = tabulate $ \i -> index g $ tranposeCoord i
+
+type family CanDiv (n :: GHC.Nat) (d :: GHC.Nat) :: Constraint where
+  CanDiv 0 _ = ()
+  CanDiv n d = CanDiv ((GHC.-) n d) d
+
+class Windows (x :: GHC.Nat) xs where
+  type WindowResult x xs :: [*]
+  window :: Proxy x -> IndexedTraversal' Int (Grid xs a) (Grid (WindowResult x xs) a)
+
+unsafeGridIso :: Iso' (Grid cs a)  (V.Vector a)
+unsafeGridIso = iso unGrid Grid
+
+instance (GHC.KnownNat a, CanDiv (CoordSized x) a) => Windows a (x ': xs) where
+  type WindowResult a (x ': xs) = xs
+  window p f' (Grid vs) =
+    let n = fromIntegral $ GHC.natVal p
+        f = indexed f'
+    in fmap (Grid . V.concat) $
+       traverse (\(i, v) -> fmap unGrid $ f i $ Grid $ V.take n v) $
+       takeWhile (not . null . snd) $ zip [0 :: Int ..] $ iterate (V.drop n) vs

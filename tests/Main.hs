@@ -29,16 +29,16 @@ import           Test.Tasty.HUnit
 
 assertOrderd :: Ord a => [a] -> Assertion
 assertOrderd =
-    let helper []     = True
-        helper (x:xs) = all (x <=) xs && helper xs
-    in assertBool "Ordered" . helper
+  let helper []     = True
+      helper (x:xs) = all (x <=) xs && helper xs
+  in assertBool "Ordered" . helper
 
 testAllCoordOrdered ::
-       forall cs proxy. (All Eq cs, All Ord cs, All IsCoord cs)
-    => proxy (Coord cs)
-    -> TestTree
+     forall cs proxy. (All Eq cs, All Ord cs, All IsCoord cs)
+  => proxy (Coord cs)
+  -> TestTree
 testAllCoordOrdered _ =
-    testCase "allCoord is ordered" $ assertOrderd (allCoord @cs)
+  testCase "allCoord is ordered" $ assertOrderd (allCoord @cs)
 
 genPeriodic :: (1 <= n, GHC.KnownNat n) => Gen (Periodic n)
 genPeriodic = Periodic <$> Gen.enumBounded
@@ -47,47 +47,51 @@ genCoord :: SListI cs => NP Gen cs -> Gen (Coord cs)
 genCoord start = Coord <$> hsequence start
 
 gridTests ::
-       forall cs a x y.
-       ( Show (Coord cs)
-       , Eq (Coord cs)
-       , All IsCoord cs
-       , GHC.KnownNat (MaxCoordSize cs)
-       , Show a
-       , Eq a
-       , AllGridSizeKnown cs
-       , cs ~ '[x,y]
-       , GHC.KnownNat (MaxCoordSize '[y,x])
-       )
-    => Gen (Coord cs)
-    -> Gen a
-    -> [TestTree]
+     forall cs a x y.
+     ( Show (Coord cs)
+     , Eq (Coord cs)
+     , All IsCoord cs
+     , GHC.KnownNat (MaxCoordSize cs)
+     , Show a
+     , Eq a
+     , AllGridSizeKnown cs
+     , cs ~ '[ x, y]
+     , GHC.KnownNat (MaxCoordSize '[ y, x])
+     )
+  => Gen (Coord cs)
+  -> Gen a
+  -> [TestTree]
 gridTests genC genA =
-    let tabulateIndex =
-            property $ do
-                c <- forAll genC
-                c === index (tabulate id :: Grid cs (Coord cs)) c
-        collapseUnCollapse =
-            property $ do
-                g :: Grid cs a <- forAll (sequenceA $ pure genA)
-                Just g === gridFromList (collapseGrid g)
-        uncollapseCollapse =
-            property $ do
-                cg :: [[a]] <-
-                    replicateM (fromIntegral $ natVal (Proxy @(CoordSized x))) $
-                    replicateM (fromIntegral $ natVal (Proxy @(CoordSized y))) $ forAll genA
-                Just cg === (collapseGrid <$> gridFromList @cs cg)
-        doubleTranspose = property $ do
-            g :: Grid cs a <- forAll (sequenceA $ pure genA)
-            g === transposeGrid (transposeGrid g)
-    in [ testProperty "Tabulate index" tabulateIndex
-       , testProperty "Collapse UnCollapse" collapseUnCollapse
-       , testProperty "UnCollapse and Collapse" uncollapseCollapse
-       , testProperty "Transpose twice is id" doubleTranspose
-       ]
+  let tabulateIndex =
+        property $ do
+          c <- forAll genC
+          c === index (tabulate id :: Grid cs (Coord cs)) c
+      collapseUnCollapse =
+        property $ do
+          g :: Grid cs a <- forAll (sequenceA $ pure genA)
+          Just g === gridFromList (collapseGrid g)
+      uncollapseCollapse =
+        property $ do
+          cg :: [[a]] <-
+            replicateM (fromIntegral $ natVal (Proxy @(CoordSized x))) $
+            replicateM (fromIntegral $ natVal (Proxy @(CoordSized y))) $
+            forAll genA
+          Just cg === (collapseGrid <$> gridFromList @cs cg)
+      doubleTranspose =
+        property $ do
+          g :: Grid cs a <- forAll (sequenceA $ pure genA)
+          g === transposeGrid (transposeGrid g)
+  in [ testProperty "Tabulate index" tabulateIndex
+     , testProperty "Collapse UnCollapse" collapseUnCollapse
+     , testProperty "UnCollapse and Collapse" uncollapseCollapse
+     , testProperty "Transpose twice is id" doubleTranspose
+     ]
 
-twoDimensionalCoordTests :: (cs ~ '[x,y], All Show cs, All Eq cs) => Gen (Coord cs) -> [TestTree]
+twoDimensionalCoordTests ::
+     (cs ~ '[ x, y], All Show cs, All Eq cs) => Gen (Coord cs) -> [TestTree]
 twoDimensionalCoordTests genC =
-  let doubleTranspose = property $ do
+  let doubleTranspose =
+        property $ do
           c <- forAll genC
           c === tranposeCoord (tranposeCoord c)
   in [testProperty "Transpose twice is id" doubleTranspose]
@@ -100,29 +104,33 @@ coordCreationTests ::
 coordCreationTests genC gen =
   [ testProperty "Create single coord" $
     property $ forAll gen >>= \g -> g === (singleCoord g ^. _1)
-  , testProperty "Create double coord" $ property $ do
-        a <- forAll gen
-        b <- forAll gen
-        let coord = appendCoord b $ singleCoord a
-        a === coord ^. _2
-        b === coord ^. _1
-  , testProperty "Create triple coord" $ property $ do
-        a <- forAll gen
-        b <- forAll gen
-        c <- forAll gen
-        let coord = appendCoord c $ appendCoord b $ singleCoord a
-        a === coord ^. _3
-        b === coord ^. _2
-        c === coord ^. _1
-  , testProperty "Head and append" $ property $ do
-        coord <- forAll genC
-        a <- forAll gen
-        let newCoord = appendCoord a coord
-        a === newCoord ^. coordHead
-        coord === newCoord ^. coordTail
-  , testProperty "Tail destruction" $ property $ do
-        coord <- forAll genC
-        appendCoord (coord ^. coordHead) (coord ^. coordTail) === coord
+  , testProperty "Create double coord" $
+    property $ do
+      a <- forAll gen
+      b <- forAll gen
+      let coord = appendCoord b $ singleCoord a
+      a === coord ^. _2
+      b === coord ^. _1
+  , testProperty "Create triple coord" $
+    property $ do
+      a <- forAll gen
+      b <- forAll gen
+      c <- forAll gen
+      let coord = appendCoord c $ appendCoord b $ singleCoord a
+      a === coord ^. _3
+      b === coord ^. _2
+      c === coord ^. _1
+  , testProperty "Head and append" $
+    property $ do
+      coord <- forAll genC
+      a <- forAll gen
+      let newCoord = appendCoord a coord
+      a === newCoord ^. coordHead
+      coord === newCoord ^. coordTail
+  , testProperty "Tail destruction" $
+    property $ do
+      coord <- forAll genC
+      appendCoord (coord ^. coordHead) (coord ^. coordTail) === coord
   ]
 
 main :: IO ()
@@ -170,11 +178,11 @@ main =
        , testGroup "HardWrap 20" hardWrap
        , testGroup "Coord [HardWrap 10, Periodic 20]" coord
        , testGroup "Coord [Periodic 10, Periodic 20]" coord2
-       , testGroup "2D Coords" $ twoDimensionalCoordTests
-              (genCoord
-                 ((HardWrap <$> Gen.enumBounded) :*
-                  (Periodic <$> Gen.enumBounded) :*
-                  Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
+       , testGroup "2D Coords" $
+         twoDimensionalCoordTests
+           (genCoord
+              ((HardWrap <$> Gen.enumBounded) :* (Periodic <$> Gen.enumBounded) :*
+               Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
        , testGroup
            "Coord creation"
            (coordCreationTests
@@ -200,4 +208,13 @@ main =
                  Gen.int $ Range.linear 0 100)
             , eq1Laws (Proxy @(Grid '[ Periodic 10, Periodic 20]))
             ])
+       , testGroup
+           "Windowing"
+           [ testCase "Blip" $ do
+                 let a :: Grid '[Ordinal 3, Ordinal 4] () = constantGrid ()
+                 assertBool
+                   "Single reduction" $
+                    allOf (window (Proxy :: Proxy 1) . window (Proxy :: Proxy 1)) ((== 1) . length) a
+                 traverseOf_ (window (Proxy @ 3)) (assertEqual "Length equality" 3 . length) a
+           ]
        ]
