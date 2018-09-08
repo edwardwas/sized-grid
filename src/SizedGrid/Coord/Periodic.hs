@@ -52,6 +52,7 @@ instance (1 <= n, KnownNat n) => Enum (Periodic n) where
 
 instance (1 <= n, KnownNat n) => IsCoord (Periodic n) where
     type CoordSized (Periodic n) = n
+    type CoordFromNat (Periodic n) = Periodic
     asOrdinal = iso unPeriodic Periodic
 
 instance (1 <= n, KnownNat n) => Semigroup (Periodic n) where

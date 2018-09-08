@@ -23,6 +23,7 @@ import           GHC.TypeLits
 class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
   -- | The maximum number of values that a Coord can take
   type CoordSized c :: Nat
+  type CoordFromNat c :: (Nat -> *)
   -- | As each coord represents a finite number of states, it must be isomorphic to an Ordinal
   asOrdinal :: Iso' c (Ordinal (CoordSized c))
   -- | The origin. If c is an instance of `Monoid`, this should be mempty
@@ -38,6 +39,7 @@ class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
 
 instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
     type CoordSized (Ordinal n) = n
+    type CoordFromNat (Ordinal n) = Ordinal
     asOrdinal = id
     zeroPosition = Ordinal (Proxy @0)
 
