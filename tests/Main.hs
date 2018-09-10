@@ -85,12 +85,39 @@ gridTests genC genA =
        , testProperty "Transpose twice is id" doubleTranspose
        ]
 
-twoDimensionalCoordTests :: (cs ~ '[x,y], All Show cs, All Eq cs) => Gen (Coord cs) -> [TestTree]
+splitTests ::
+       forall c cs a.
+       ( Show a
+       , Eq a
+       , All IsCoord (c ': cs)
+       , KnownNat (CoordSized c * MaxCoordSize cs)
+       , KnownNat (MaxCoordSize cs)
+       )
+    => Proxy (c ': cs)
+    -> Gen a
+    -> [TestTree]
+splitTests _ genA =
+    let splitAndCombine =
+            property $ do
+                g :: Grid (c ': cs) a <- forAll (sequenceA $ pure genA)
+                g === combineGrid (splitGrid g)
+        combineAndSplit =
+            property $ do
+                g :: Grid '[ c] (Grid cs a) <-
+                    forAll $ sequenceA $ pure (sequenceA $ pure genA)
+                g === splitGrid (combineGrid g)
+     in [ testProperty "Split and Combine" splitAndCombine
+        , testProperty "Combine and split" combineAndSplit
+        ]
+
+twoDimensionalCoordTests ::
+       (cs ~ '[ x, y], All Show cs, All Eq cs) => Gen (Coord cs) -> [TestTree]
 twoDimensionalCoordTests genC =
-  let doubleTranspose = property $ do
-          c <- forAll genC
-          c === tranposeCoord (tranposeCoord c)
-  in [testProperty "Transpose twice is id" doubleTranspose]
+    let doubleTranspose =
+            property $ do
+                c <- forAll genC
+                c === tranposeCoord (tranposeCoord c)
+     in [testProperty "Transpose twice is id" doubleTranspose]
 
 coordCreationTests ::
      (All Show cs, All Eq cs, Eq a, Show a, Show c, Eq c)
@@ -127,77 +154,84 @@ coordCreationTests genC gen =
 
 main :: IO ()
 main =
-  let periodic =
-        let g :: Gen (Periodic 10) = genPeriodic
-        in [ semigroupLaws g
-           , monoidLaws g
-           , additiveGroupLaws g
-           , affineSpaceLaws g
-           , aesonLaws g
-           ]
-      hardWrap =
-        let g :: Gen (HardWrap 10) = HardWrap <$> Gen.enumBounded
-        in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g]
-      coord =
-        let g :: Gen (Coord '[ HardWrap 10, Periodic 20]) =
-              genCoord
-                ((HardWrap <$> Gen.enumBounded) :*
-                 (Periodic <$> Gen.enumBounded) :*
-                 Nil)
-        in [ semigroupLaws g
-           , monoidLaws g
-           , affineSpaceLaws g
-           , aesonLaws g
-           , testAllCoordOrdered g
-           ]
-      coord2 =
-        let g :: Gen (Coord '[ Periodic 10, Periodic 20]) =
-              genCoord
-                ((Periodic <$> Gen.enumBounded) :*
-                 (Periodic <$> Gen.enumBounded) :*
-                 Nil)
-        in [ semigroupLaws g
-           , monoidLaws g
-           , affineSpaceLaws g
-           , additiveGroupLaws g
-           , aesonLaws g
-           , testAllCoordOrdered g
-           ]
-  in defaultMain $
-     testGroup
-       "tests"
-       [ testGroup "Periodic 20" periodic
-       , testGroup "HardWrap 20" hardWrap
-       , testGroup "Coord [HardWrap 10, Periodic 20]" coord
-       , testGroup "Coord [Periodic 10, Periodic 20]" coord2
-       , testGroup "2D Coords" $ twoDimensionalCoordTests
-              (genCoord
-                 ((HardWrap <$> Gen.enumBounded) :*
-                  (Periodic <$> Gen.enumBounded) :*
-                  Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
-       , testGroup
-           "Coord creation"
-           (coordCreationTests
-              (genCoord
-                 ((HardWrap <$> Gen.enumBounded) :*
-                  (Periodic <$> Gen.enumBounded) :*
-                  Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
-              (Gen.enumBounded :: Gen Int))
-       , testGroup
-           "Grid"
-           ((gridTests
-               @'[ Periodic 10, Periodic 11]
-               (genCoord $
-                (Periodic <$> Gen.enumBounded) :* (Periodic <$> Gen.enumBounded) :*
-                Nil))
-              (Gen.int $ Range.linear 0 100) ++
-            [ applicativeLaws
-                (Proxy @(Grid '[ Periodic 10, Periodic 11]))
-                (Gen.int $ Range.linear 0 100)
-            , aesonLaws
-                (sequenceA $
-                 pure @(Grid '[ Periodic 10, Periodic 11]) $
-                 Gen.int $ Range.linear 0 100)
-            , eq1Laws (Proxy @(Grid '[ Periodic 10, Periodic 20]))
-            ])
-       ]
+    let periodic =
+            let g :: Gen (Periodic 10) = genPeriodic
+             in [ semigroupLaws g
+                , monoidLaws g
+                , additiveGroupLaws g
+                , affineSpaceLaws g
+                , aesonLaws g
+                ]
+        hardWrap =
+            let g :: Gen (HardWrap 10) = HardWrap <$> Gen.enumBounded
+             in [semigroupLaws g, monoidLaws g, affineSpaceLaws g, aesonLaws g]
+        coord =
+            let g :: Gen (Coord '[ HardWrap 10, Periodic 20]) =
+                    genCoord
+                        ((HardWrap <$> Gen.enumBounded) :*
+                         (Periodic <$> Gen.enumBounded) :*
+                         Nil)
+             in [ semigroupLaws g
+                , monoidLaws g
+                , affineSpaceLaws g
+                , aesonLaws g
+                , testAllCoordOrdered g
+                ]
+        coord2 =
+            let g :: Gen (Coord '[ Periodic 10, Periodic 20]) =
+                    genCoord
+                        ((Periodic <$> Gen.enumBounded) :*
+                         (Periodic <$> Gen.enumBounded) :*
+                         Nil)
+             in [ semigroupLaws g
+                , monoidLaws g
+                , affineSpaceLaws g
+                , additiveGroupLaws g
+                , aesonLaws g
+                , testAllCoordOrdered g
+                ]
+     in defaultMain $
+        testGroup
+            "tests"
+            [ testGroup "Periodic 20" periodic
+            , testGroup "HardWrap 20" hardWrap
+            , testGroup "Coord [HardWrap 10, Periodic 20]" coord
+            , testGroup "Coord [Periodic 10, Periodic 20]" coord2
+            , testGroup "2D Coords" $
+              twoDimensionalCoordTests
+                  (genCoord
+                       ((HardWrap <$> Gen.enumBounded) :*
+                        (Periodic <$> Gen.enumBounded) :*
+                        Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
+            , testGroup
+                  "Coord creation"
+                  (coordCreationTests
+                       (genCoord
+                            ((HardWrap <$> Gen.enumBounded) :*
+                             (Periodic <$> Gen.enumBounded) :*
+                             Nil) :: Gen (Coord '[ HardWrap 10, Periodic 10]))
+                       (Gen.enumBounded :: Gen Int))
+            , testGroup
+                  "Grid"
+                  ((gridTests
+                        @'[ Periodic 10, Periodic 11]
+                        (genCoord $
+                         (Periodic <$> Gen.enumBounded) :*
+                         (Periodic <$> Gen.enumBounded) :*
+                         Nil))
+                       (Gen.int $ Range.linear 0 100) ++
+                   [ applicativeLaws
+                         (Proxy @(Grid '[ Periodic 10, Periodic 11]))
+                         (Gen.int $ Range.linear 0 100)
+                   , aesonLaws
+                         (sequenceA $
+                          pure @(Grid '[ Periodic 10, Periodic 11]) $
+                          Gen.int $ Range.linear 0 100)
+                   , eq1Laws (Proxy @(Grid '[ Periodic 10, Periodic 20]))
+                   ])
+            , testGroup
+                  "Splitting"
+                  (splitTests
+                       (Proxy :: Proxy '[ HardWrap 10, HardWrap 15])
+                       (Gen.int $ Range.linear 0 100))
+            ]

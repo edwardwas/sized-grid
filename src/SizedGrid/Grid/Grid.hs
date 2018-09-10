@@ -143,3 +143,18 @@ transposeGrid ::
   => Grid '[ w, h] a
   -> Grid '[ h, w] a
 transposeGrid g = tabulate $ \i -> index g $ tranposeCoord i
+
+splitGrid ::
+       forall c cs a. (IsCoord c, GHC.KnownNat (MaxCoordSize cs))
+    => Grid (c ': cs) a
+    -> Grid '[ c] (Grid cs a)
+splitGrid (Grid v) =
+    Grid $
+    V.fromList $
+    map Grid
+        (splitVectorBySize
+             (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
+             v)
+
+combineGrid :: Grid '[c] (Grid cs a) -> Grid (c ': cs) a
+combineGrid (Grid v) = Grid (v >>= unGrid)

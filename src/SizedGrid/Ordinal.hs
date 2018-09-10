@@ -65,6 +65,7 @@ numToOrdinal n =
 ordinalToNum :: Num a => Ordinal m -> a
 ordinalToNum (Ordinal p) = fromIntegral $ natVal p
 
+-- | Convert between an ordinal and a usual number. This is a `Prism` as it may fail as `Oridnals` can only exist in a certain range.
 _Ordinal :: (KnownNat n, Integral a) => Prism' a (Ordinal n)
 _Ordinal = prism' ordinalToNum numToOrdinal
 
