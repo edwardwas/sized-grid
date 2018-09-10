@@ -121,6 +121,7 @@ splitTests _ genA =
      in [ testProperty "Split and Combine" splitAndCombine
         , testProperty "Combine and split" combineAndSplit
         , testProperty "Split and Combine Higher dim" higherSplitAndCombine
+        , testProperty "Combine and Split Higher dim" higherCombineAndSplit
         ]
 
 twoDimensionalCoordTests ::
@@ -245,6 +246,6 @@ main =
             , testGroup
                   "Splitting"
                   (splitTests
-                       (Proxy :: Proxy '[ HardWrap 10, HardWrap 15])
+                       (Proxy :: Proxy '[ HardWrap 10, HardWrap 15, Ordinal 20])
                        (Gen.int $ Range.linear 0 100))
             ]
