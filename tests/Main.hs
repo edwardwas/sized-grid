@@ -92,6 +92,9 @@ splitTests ::
        , All IsCoord (c ': cs)
        , KnownNat (CoordSized c * MaxCoordSize cs)
        , KnownNat (MaxCoordSize cs)
+       , KnownNat (5 * MaxCoordSize cs)
+       , KnownNat (3 * MaxCoordSize cs)
+       , KnownNat (2 * MaxCoordSize cs)
        )
     => Proxy (c ': cs)
     -> Gen a
@@ -106,8 +109,18 @@ splitTests _ genA =
                 g :: Grid '[ c] (Grid cs a) <-
                     forAll $ sequenceA $ pure (sequenceA $ pure genA)
                 g === splitGrid (combineGrid g)
+        higherSplitAndCombine = property $ do
+            g :: Grid (Ordinal 5 ': cs) a <- forAll $ sequenceA $ pure genA
+            let (a :: Grid (Ordinal 3 ': cs) a ,b) = splitHigherDim g
+            g === combineHigherDim a b
+        higherCombineAndSplit = property $ do
+            g1 :: Grid (Ordinal 3 ': cs) a <- forAll $ sequenceA $ pure genA
+            g2 :: Grid (Ordinal 2 ': cs) a <- forAll $ sequenceA $ pure genA
+            let g = combineHigherDim g1 g2
+            (g1,g2) === splitHigherDim g
      in [ testProperty "Split and Combine" splitAndCombine
         , testProperty "Combine and split" combineAndSplit
+        , testProperty "Split and Combine Higher dim" higherSplitAndCombine
         ]
 
 twoDimensionalCoordTests ::

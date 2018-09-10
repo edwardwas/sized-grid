@@ -145,7 +145,7 @@ transposeGrid ::
 transposeGrid g = tabulate $ \i -> index g $ tranposeCoord i
 
 splitGrid ::
-       forall c cs a. (IsCoord c, GHC.KnownNat (MaxCoordSize cs))
+       forall c cs a. (GHC.KnownNat (MaxCoordSize cs))
     => Grid (c ': cs) a
     -> Grid '[ c] (Grid cs a)
 splitGrid (Grid v) =
@@ -158,3 +158,29 @@ splitGrid (Grid v) =
 
 combineGrid :: Grid '[c] (Grid cs a) -> Grid (c ': cs) a
 combineGrid (Grid v) = Grid (v >>= unGrid)
+
+combineHigherDim ::
+       ( CoordFromNat a ~ CoordFromNat b
+       , c ~ CoordFromNat a ((GHC.+) (CoordSized a) (CoordSized b)))
+    => Grid (a ': as) x
+    -> Grid (b ': as) x
+    -> Grid (c ': as) x
+combineHigherDim (Grid v1) (Grid v2) = Grid (v1 <> v2)
+
+splitHigherDim ::
+       forall a b c as x.
+       ( GHC.KnownNat (CoordSized b)
+       , GHC.KnownNat (MaxCoordSize as)
+       , c ~ CoordFromNat a ((GHC.-) (CoordSized a) (CoordSized b))
+       , CoordFromNat a ~ CoordFromNat b
+       )
+    => Grid (a ': as) x
+    -> (Grid (b ': as) x, Grid (c ': as) x)
+splitHigherDim (Grid v) =
+    let (a, b) =
+            V.splitAt
+                (fromIntegral $
+                 GHC.natVal (Proxy @(CoordSized b)) *
+                 GHC.natVal (Proxy @(MaxCoordSize as)))
+                v
+     in (Grid a, Grid b)
