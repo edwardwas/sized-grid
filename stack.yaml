@@ -1,3 +1,6 @@
-resolver: lts-12.7
+flags: {}
 packages:
 - .
+extra-deps:
+- hedgehog-fn-0.6
+resolver: lts-12.7

@@ -50,6 +50,8 @@ pattern (:|) :: c -> Coord cs -> Coord (c ': cs)
 pattern (:|) a as <- (coordSplit -> (a,as))
   where (:|) a (Coord as) = Coord (I a :* as)
 
+infixr 5 :|
+
 _WrappedCoord :: Lens' (Coord cs) (NP I cs)
 _WrappedCoord f (Coord n) = Coord <$> f n
 

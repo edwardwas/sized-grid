@@ -1,20 +1,23 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module Test.Utils where
 
-import           Data.AdditiveGroup
-import           Data.Aeson
-import           Data.AffineSpace
-import           Data.Functor.Classes
-import           Data.Proxy
 #if MIN_VERSION_base(4,11,0)
 #else
 import           Data.Semigroup
 #endif
+import           Control.Lens
+import           Data.AdditiveGroup
+import           Data.Aeson
+import           Data.AffineSpace
+import           Data.Functor.Classes
+import           Data.Functor.Compose
+import           Data.Proxy
 import           Hedgehog
 import qualified Hedgehog.Gen         as Gen
 import qualified Hedgehog.Range       as Range
@@ -138,3 +141,24 @@ applicativeLaws _ gen =
            [ testProperty "Identity" identiy
            , testProperty "Homomorphism" homomorphism
            ]
+
+traversalLaws ::
+       (Eq a, Show a, Num b, Functor f)
+    => Gen a
+    -> Traversal' a (f b)
+    -> TestTree
+traversalLaws g t =
+    let pureId =
+            property $ do
+                a <- forAll g
+                pure @[] a === t pure a
+        compose =
+            property $ do
+                a <- forAll g
+                let fFunc = \x -> Just ((* 3) <$> x)
+                let gFunc = \y -> Just ((+ 2) <$> y)
+                fmap (t fFunc) (t gFunc a) ===
+                    getCompose (t (Compose . fmap fFunc . gFunc) a)
+     in testGroup
+            "Traveral Laws"
+            [testProperty "Pure Id" pureId, testProperty "Compose" compose]

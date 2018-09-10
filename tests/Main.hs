@@ -17,10 +17,13 @@ import           Control.Lens        hiding (index)
 import           Control.Monad       (replicateM)
 import           Data.Functor.Rep
 import           Data.Proxy
+import qualified Data.Vector         as V
 import           Generics.SOP        hiding (S, Z)
+import qualified GHC.Generics        as GHC
 import           GHC.TypeLits
 import qualified GHC.TypeLits        as GHC
 import           Hedgehog
+import           Hedgehog.Function
 import qualified Hedgehog.Gen        as Gen
 import qualified Hedgehog.Range      as Range
 import           Test.Tasty
@@ -89,12 +92,16 @@ splitTests ::
        forall c cs a.
        ( Show a
        , Eq a
+       , Num a
        , All IsCoord (c ': cs)
        , KnownNat (CoordSized c * MaxCoordSize cs)
        , KnownNat (MaxCoordSize cs)
        , KnownNat (5 * MaxCoordSize cs)
        , KnownNat (3 * MaxCoordSize cs)
        , KnownNat (2 * MaxCoordSize cs)
+       , KnownNat (CoordSized (CoordFromNat c 2) * MaxCoordSize cs)
+       , CanDivide (CoordSized c) (CoordSized (CoordFromNat c 2))
+       , KnownNat (CoordSized (CoordFromNat c 2))
        )
     => Proxy (c ': cs)
     -> Gen a
@@ -109,19 +116,24 @@ splitTests _ genA =
                 g :: Grid '[ c] (Grid cs a) <-
                     forAll $ sequenceA $ pure (sequenceA $ pure genA)
                 g === splitGrid (combineGrid g)
-        higherSplitAndCombine = property $ do
-            g :: Grid (Ordinal 5 ': cs) a <- forAll $ sequenceA $ pure genA
-            let (a :: Grid (Ordinal 3 ': cs) a ,b) = splitHigherDim g
-            g === combineHigherDim a b
-        higherCombineAndSplit = property $ do
-            g1 :: Grid (Ordinal 3 ': cs) a <- forAll $ sequenceA $ pure genA
-            g2 :: Grid (Ordinal 2 ': cs) a <- forAll $ sequenceA $ pure genA
-            let g = combineHigherDim g1 g2
-            (g1,g2) === splitHigherDim g
+        higherSplitAndCombine =
+            property $ do
+                g :: Grid (Ordinal 5 ': cs) a <- forAll $ sequenceA $ pure genA
+                let (a :: Grid (Ordinal 3 ': cs) a, b) = splitHigherDim g
+                g === combineHigherDim a b
+        higherCombineAndSplit =
+            property $ do
+                g1 :: Grid (Ordinal 3 ': cs) a <- forAll $ sequenceA $ pure genA
+                g2 :: Grid (Ordinal 2 ': cs) a <- forAll $ sequenceA $ pure genA
+                let g = combineHigherDim g1 g2
+                (g1, g2) === splitHigherDim g
      in [ testProperty "Split and Combine" splitAndCombine
         , testProperty "Combine and split" combineAndSplit
         , testProperty "Split and Combine Higher dim" higherSplitAndCombine
         , testProperty "Combine and Split Higher dim" higherCombineAndSplit
+        , traversalLaws
+              (sequenceA $ pure genA :: Gen (Grid (c ': cs) a))
+              (gridWindows @(CoordFromNat c 2))
         ]
 
 twoDimensionalCoordTests ::
@@ -144,14 +156,14 @@ coordCreationTests genC gen =
   , testProperty "Create double coord" $ property $ do
         a <- forAll gen
         b <- forAll gen
-        let coord = appendCoord b $ singleCoord a
+        let coord = b :| singleCoord a
         a === coord ^. _2
         b === coord ^. _1
   , testProperty "Create triple coord" $ property $ do
         a <- forAll gen
         b <- forAll gen
         c <- forAll gen
-        let coord = appendCoord c $ appendCoord b $ singleCoord a
+        let coord = c :| (b :| singleCoord a)
         a === coord ^. _3
         b === coord ^. _2
         c === coord ^. _1
@@ -246,6 +258,6 @@ main =
             , testGroup
                   "Splitting"
                   (splitTests
-                       (Proxy :: Proxy '[ HardWrap 10, HardWrap 15, Ordinal 20])
+                       (Proxy :: Proxy '[ HardWrap 8, HardWrap 3, HardWrap 5])
                        (Gen.int $ Range.linear 0 100))
             ]

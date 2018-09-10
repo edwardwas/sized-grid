@@ -1,9 +1,15 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -23,12 +29,13 @@ import           Data.Proxy            (Proxy (..))
 import qualified Data.Vector           as V
 import           Generics.SOP
 import           GHC.Exts
+import qualified GHC.Generics          as GHC
 import qualified GHC.TypeLits          as GHC
 
 -- | A multi dimensional sized grid
 newtype Grid (cs :: [*]) a = Grid
   { unGrid :: V.Vector a
-  } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1)
+  } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1, GHC.Generic)
 
 instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
   pure =
@@ -172,7 +179,7 @@ splitHigherDim ::
        ( GHC.KnownNat (CoordSized b)
        , GHC.KnownNat (MaxCoordSize as)
        , c ~ CoordFromNat a ((GHC.-) (CoordSized a) (CoordSized b))
-       , CoordFromNat a ~ CoordFromNat b
+       , (GHC.<=) (CoordSized b) (CoordSized a)
        )
     => Grid (a ': as) x
     -> (Grid (b ': as) x, Grid (c ': as) x)
@@ -184,3 +191,24 @@ splitHigherDim (Grid v) =
                  GHC.natVal (Proxy @(MaxCoordSize as)))
                 v
      in (Grid a, Grid b)
+
+type family CanDivide m n :: Constraint where
+  CanDivide 0 _ = ()
+  CanDivide m n = CanDivide ((GHC.-) m n) n
+
+class GridWindowing as bs where
+  gridWindows :: Grid as x -> [Grid bs x]
+
+instance {-# OVERLAPS #-} GridWindowing (a ': as) (a ': as) where
+  gridWindows g = [g]
+
+instance {-# OVERLAPS #-} ( (GHC.<=) (CoordSized b) (CoordSized a)
+         , GridWindowing (c ': as) (b ': as)
+         , c ~ CoordFromNat a ((GHC.-) (CoordSized a) (CoordSized b))
+         , GHC.KnownNat (CoordSized b)
+         , GHC.KnownNat (MaxCoordSize as)
+         ) =>
+         GridWindowing (a ': as) (b ': as) where
+    gridWindows g =
+        let (a, b) = splitHigherDim g
+         in a : gridWindows b
