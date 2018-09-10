@@ -17,6 +17,7 @@ module SizedGrid.Ordinal where
 
 import           SizedGrid.Internal.Type
 
+import           Control.Lens            (Prism', prism')
 import           Control.Monad           (guard)
 import           Data.Aeson
 import           Data.Constraint
@@ -63,6 +64,9 @@ numToOrdinal n =
 -- | Transform an ordinal to a given number
 ordinalToNum :: Num a => Ordinal m -> a
 ordinalToNum (Ordinal p) = fromIntegral $ natVal p
+
+_Ordinal :: (KnownNat n, Integral a) => Prism' a (Ordinal n)
+_Ordinal = prism' ordinalToNum numToOrdinal
 
 instance (1 <= m, KnownNat m) => Bounded (Ordinal m) where
     minBound = Ordinal (Proxy @0)

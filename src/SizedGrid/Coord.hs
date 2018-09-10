@@ -3,12 +3,14 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 module SizedGrid.Coord where
 
@@ -40,6 +42,13 @@ type family Length cs where
 -- | A multideminsion coordinate
 newtype Coord cs = Coord {unCoord :: NP I cs}
   deriving (Generic)
+
+coordSplit:: Coord (c ': cs) -> (c, Coord cs)
+coordSplit (Coord (I x :* xs)) = (x, Coord xs)
+
+pattern (:|) :: c -> Coord cs -> Coord (c ': cs)
+pattern (:|) a as <- (coordSplit -> (a,as))
+  where (:|) a (Coord as) = Coord (I a :* as)
 
 _WrappedCoord :: Lens' (Coord cs) (NP I cs)
 _WrappedCoord f (Coord n) = Coord <$> f n
