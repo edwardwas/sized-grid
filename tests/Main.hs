@@ -131,9 +131,6 @@ splitTests _ genA =
         , testProperty "Combine and split" combineAndSplit
         , testProperty "Split and Combine Higher dim" higherSplitAndCombine
         , testProperty "Combine and Split Higher dim" higherCombineAndSplit
-        , traversalLaws
-              (sequenceA $ pure genA :: Gen (Grid (c ': cs) a))
-              (gridWindows @(CoordFromNat c 2))
         ]
 
 twoDimensionalCoordTests ::
