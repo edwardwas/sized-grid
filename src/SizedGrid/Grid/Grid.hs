@@ -9,6 +9,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PartialTypeSignatures      #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
@@ -182,82 +183,67 @@ combineHigherDim (Grid v1) (Grid v2) = Grid (v1 <> v2)
 
 splitHigherDim ::
        forall a b c as x.
-       ( GHC.KnownNat (CoordSized b)
-       , GHC.KnownNat (MaxCoordSize as)
-       , c ~ CoordFromNat a ((GHC.-) (CoordSized a) (CoordSized b))
-       , (GHC.<=) (CoordSized b) (CoordSized a)
+       ( KnownNat (CoordSized b)
+       , c ~ CoordFromNat a (CoordSized a - CoordSized b)
+       , CoordSized b <= CoordSized a
+       , AllSizedKnown as
        )
     => Grid (a ': as) x
     -> (Grid (b ': as) x, Grid (c ': as) x)
 splitHigherDim (Grid v) =
     let (a, b) =
-            V.splitAt
-                (fromIntegral $
-                 GHC.natVal (Proxy @(CoordSized b)) *
-                 GHC.natVal (Proxy @(MaxCoordSize as)))
-                v
+            withDict
+                (sizeProof @as)
+                (V.splitAt
+                     (fromIntegral $
+                      GHC.natVal (Proxy @(CoordSized b)) *
+                      GHC.natVal (Proxy @(MaxCoordSize as)))
+                     v)
      in (Grid a, Grid b)
 
-type family CanDivide m n :: Constraint where
-  CanDivide 0 _ = ()
-  CanDivide m n = CanDivide ((GHC.-) m n) n
-
-class GridWindowing as bs where
-  gridWindows :: Grid as x -> [Grid bs x]
-
-instance {-# OVERLAPS #-} GridWindowing (a ': as) (a ': as) where
-  gridWindows g = [g]
-
-instance {-# OVERLAPS #-} ( (GHC.<=) (CoordSized b) (CoordSized a)
-         , GridWindowing (c ': as) (b ': as)
-         , c ~ CoordFromNat a ((GHC.-) (CoordSized a) (CoordSized b))
-         , GHC.KnownNat (CoordSized b)
-         , GHC.KnownNat (MaxCoordSize as)
-         ) =>
-         GridWindowing (a ': as) (b ': as) where
-    gridWindows g =
-        let (a, b) = splitHigherDim g
-         in a : gridWindows b
-
 mapLowerDim ::
-       forall as bs x y c f. (GHC.KnownNat (MaxCoordSize as), Applicative f)
+       forall as bs x y c f. (AllSizedKnown as, Applicative f)
     => (Grid as x -> f (Grid bs y))
     -> Grid (c ': as) x
     -> f (Grid (c ': bs) y)
 mapLowerDim f (Grid v) =
-    fmap (Grid . V.concat) $
-    traverse (fmap unGrid . f . Grid) $
-    splitVectorBySize (fromIntegral (GHC.natVal (Proxy @(MaxCoordSize as)))) v
+    withDict
+        (sizeProof @as)
+        (fmap (Grid . V.concat) $
+         traverse (fmap unGrid . f . Grid) $
+         splitVectorBySize
+             (fromIntegral (GHC.natVal (Proxy @(MaxCoordSize as))))
+             v)
 
 class ShrinkableGrid (cs :: [GHC.Nat]) (as :: [*]) (bs :: [*]) where
   shrinkGrid :: Proxy cs -> Grid as x -> Grid bs x
 
--- | There is a fine line between type level programing and the necronomicon
-instance ( KnownNat (CoordSized b)
+instance ShrinkableGrid '[] '[] '[] where
+  shrinkGrid _ (Grid v) = Grid v
+
+instance ( CoordSized (CoordFromNat a c) <= CoordSized a
+         , ShrinkableGrid cs as bs
+         , AllSizedKnown as
+         , KnownNat (CoordSized b)
          , KnownNat (CoordSized (CoordFromNat a c))
-         , CoordSized (CoordFromNat a c) <= CoordSized a
-         , CoordSized b <= CoordSized
-            (CoordFromNat a (CoordSized a - CoordSized (CoordFromNat a c)))
+         , CoordSized b <=
+              CoordSized (CoordFromNat a (CoordSized a - (CoordSized (CoordFromNat a c))))
          ) =>
-         ShrinkableGrid (c ': '[]) (a ': '[]) (b ': '[]) where
+         ShrinkableGrid (c ': cs) (a ': as) (b ': bs) where
     shrinkGrid ::
            forall x.
-           ( KnownNat (CoordSized b)
+           ( CoordSized (CoordFromNat a c) <= CoordSized a
+           , AllSizedKnown as
+           , KnownNat (CoordSized b)
            , KnownNat (CoordSized (CoordFromNat a c))
-           , CoordSized (CoordFromNat a c) <= CoordSized a
-           , CoordSized b <= CoordSized
-                (CoordFromNat a (CoordSized a - CoordSized (CoordFromNat a c)))
+           , ShrinkableGrid cs as bs
+           , CoordSized b <=
+                CoordSized (CoordFromNat a (CoordSized a - (CoordSized (CoordFromNat a c))))
            )
-        => Proxy (c ': '[])
-        -> Grid (a ': '[]) x
-        -> Grid (b ': '[]) x
+        => Proxy (c ': cs)
+        -> Grid (a ': as) x
+        -> Grid (b ': bs) x
     shrinkGrid _ g =
-        let (_ :: Grid '[ CoordFromNat a c] x
-              , x :: Grid '[ CoordFromNat a
-                  (CoordSized a - CoordSized (CoordFromNat a c))] x) =
-                splitHigherDim g
-            (y :: Grid '[ b] x, _) = splitHigherDim x
-         in y
-
-instance ShrinkableGrid '[] '[] '[] where
-  shrinkGrid _ g = g
+        let (_ :: Grid (CoordFromNat a c ': as) x, b) = splitHigherDim g
+            (c, _) = splitHigherDim b
+         in runIdentity $ mapLowerDim (Identity . shrinkGrid (Proxy :: Proxy cs)) c

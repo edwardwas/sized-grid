@@ -7,6 +7,9 @@
 
 module Test.Utils where
 
+import           SizedGrid.Coord.Class
+import           SizedGrid.Ordinal
+
 #if MIN_VERSION_base(4,11,0)
 #else
 import           Data.Semigroup
@@ -18,9 +21,10 @@ import           Data.AffineSpace
 import           Data.Functor.Classes
 import           Data.Functor.Compose
 import           Data.Proxy
+import           GHC.TypeLits
 import           Hedgehog
-import qualified Hedgehog.Gen         as Gen
-import qualified Hedgehog.Range       as Range
+import qualified Hedgehog.Gen          as Gen
+import qualified Hedgehog.Range        as Range
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
 import           Test.Tasty.HUnit
@@ -162,3 +166,21 @@ traversalLaws g t =
      in testGroup
             "Traveral Laws"
             [testProperty "Pure Id" pureId, testProperty "Compose" compose]
+
+isCoordLaws ::
+       forall a. (IsCoord a)
+    => Proxy a
+    -> TestTree
+isCoordLaws p =
+    testCase "IsCoord Laws" $ do
+        assertEqual
+            "Max coord size is sCoordSized"
+            (maxCoordSize p)
+            (natVal (sCoordSized p) - 1)
+        assertEqual
+            "zeroPosition is Zero"
+            (0 :: Int)
+            (ordinalToNum $ view asOrdinal (zeroPosition @a))
+        assertEqual "Size Proxy Zero"
+            (0 :: Integer) (asSizeProxy (zeroPosition @a) natVal)
+

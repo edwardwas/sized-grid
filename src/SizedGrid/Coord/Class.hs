@@ -37,11 +37,19 @@ class (1 <= CoordSized c, KnownNat (CoordSized c)) => IsCoord c where
   maxCoordSize :: proxy c -> Integer
   maxCoordSize p = natVal (sCoordSized p) - 1
 
+  asSizeProxy ::
+         c
+      -> (forall n. (KnownNat n, n + 1 <= (CoordSized c)) =>
+                        Proxy n -> x)
+      -> x
+  asSizeProxy c = asSizeProxy (view asOrdinal c)
+
 instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
     type CoordSized (Ordinal n) = n
     type CoordFromNat (Ordinal n) = Ordinal
     asOrdinal = id
     zeroPosition = Ordinal (Proxy @0)
+    asSizeProxy (Ordinal p) func = func p
 
 -- | Enumerate all possible values of a coord, in order
 allCoordLike :: IsCoord c => [c]
