@@ -17,7 +17,6 @@ import           Control.Comonad.Store
 import           Data.Functor.Rep
 import           Data.Semigroup        (Semigroup (..))
 import           Generics.SOP
-import qualified GHC.TypeLits          as GHC
 
 -- | Similar to `Grid`, but this has a focus on a certain square. Becuase of this we loose some instances, such as `Applicative`, but we gain a `Comonad` and `ComonadStore` instance. We can convert between a focused and unfocused list using facilites in `IsGrid`
 data FocusedGrid cs a = FocusedGrid
@@ -25,7 +24,7 @@ data FocusedGrid cs a = FocusedGrid
     , focusedGridPosition :: Coord cs
     } deriving (Functor,Foldable,Traversable)
 
-instance ( GHC.KnownNat (MaxCoordSize cs)
+instance ( AllSizedKnown cs
          , All IsCoord cs
          , All Monoid cs
          , All Semigroup cs
@@ -35,7 +34,7 @@ instance ( GHC.KnownNat (MaxCoordSize cs)
     extract (FocusedGrid g p) = index g p
     duplicate (FocusedGrid g p) = FocusedGrid (tabulate (FocusedGrid g)) p
 
-instance ( GHC.KnownNat (MaxCoordSize cs)
+instance ( AllSizedKnown cs
          , All IsCoord cs
          , All Monoid cs
          , All Semigroup cs

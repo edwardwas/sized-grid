@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -5,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -24,6 +26,8 @@ import           Control.Monad.State
 import           Data.AdditiveGroup
 import           Data.Aeson
 import           Data.AffineSpace
+import           Data.Constraint
+import           Data.Constraint.Nat
 import           Data.List             (intercalate)
 import           Data.Semigroup        (Semigroup (..))
 import qualified Data.Vector           as V
@@ -31,6 +35,7 @@ import           Generics.SOP          hiding (Generic, S, Z)
 import qualified Generics.SOP          as SOP
 import           GHC.Exts              (Constraint)
 import           GHC.Generics          (Generic)
+import           GHC.TypeLits
 import qualified GHC.TypeLits          as GHC
 import           System.Random         (Random (..))
 
@@ -276,3 +281,16 @@ tranposeCoord (Coord (a :* b :* Nil)) = Coord (b :* a :* Nil)
 -- | The zero position for a coord
 zeroCoord :: All IsCoord cs => Coord cs
 zeroCoord = Coord $ hcpure (Proxy :: Proxy IsCoord) (I $ zeroPosition)
+
+class AllSizedKnown (cs :: [*]) where
+  sizeProof :: Dict (KnownNat (MaxCoordSize cs))
+
+instance AllSizedKnown '[] where
+    sizeProof = Dict
+
+instance (KnownNat (CoordSized a), AllSizedKnown as) =>
+         AllSizedKnown (a ': as) where
+    sizeProof =
+        withDict
+            (sizeProof @as)
+            (Dict \\ (timesNat @(CoordSized a) @(MaxCoordSize as)))

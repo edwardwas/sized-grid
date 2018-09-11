@@ -5,7 +5,9 @@
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -22,14 +24,15 @@ import           SizedGrid.Coord.Class
 
 import           Control.Lens          hiding (index)
 import           Data.Aeson
+import           Data.Constraint
 import           Data.Distributive
 import           Data.Functor.Classes
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
 import qualified Data.Vector           as V
 import           Generics.SOP
-import           GHC.Exts
 import qualified GHC.Generics          as GHC
+import           GHC.TypeLits
 import qualified GHC.TypeLits          as GHC
 
 -- | A multi dimensional sized grid
@@ -37,21 +40,24 @@ newtype Grid (cs :: [*]) a = Grid
   { unGrid :: V.Vector a
   } deriving (Eq, Show, Functor, Foldable, Traversable, Eq1, Show1, GHC.Generic)
 
-instance GHC.KnownNat (MaxCoordSize cs) => Applicative (Grid cs) where
-  pure =
-    Grid .
-    V.replicate (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
-  Grid fs <*> Grid as = Grid $ V.zipWith ($) fs as
+instance AllSizedKnown cs => Applicative (Grid cs) where
+    pure =
+        withDict
+            (sizeProof @cs)
+            (Grid .
+             V.replicate
+                 (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs))))
+    Grid fs <*> Grid as = Grid $ V.zipWith ($) fs as
 
-instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
+instance (AllSizedKnown cs, All IsCoord cs) =>
          Monad (Grid cs) where
   g >>= f = imap (\p a -> f a `index` p) g
 
-instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
+instance (AllSizedKnown cs, All IsCoord cs) =>
          Distributive (Grid cs) where
   distribute = distributeRep
 
-instance (All IsCoord cs, GHC.KnownNat (MaxCoordSize cs)) =>
+instance (All IsCoord cs, AllSizedKnown cs) =>
          Representable (Grid cs) where
   type Rep (Grid cs) = Coord cs
   tabulate func = Grid $ V.fromList $ map func $ allCoord
@@ -212,3 +218,46 @@ instance {-# OVERLAPS #-} ( (GHC.<=) (CoordSized b) (CoordSized a)
     gridWindows g =
         let (a, b) = splitHigherDim g
          in a : gridWindows b
+
+mapLowerDim ::
+       forall as bs x y c f. (GHC.KnownNat (MaxCoordSize as), Applicative f)
+    => (Grid as x -> f (Grid bs y))
+    -> Grid (c ': as) x
+    -> f (Grid (c ': bs) y)
+mapLowerDim f (Grid v) =
+    fmap (Grid . V.concat) $
+    traverse (fmap unGrid . f . Grid) $
+    splitVectorBySize (fromIntegral (GHC.natVal (Proxy @(MaxCoordSize as)))) v
+
+class ShrinkableGrid (cs :: [GHC.Nat]) (as :: [*]) (bs :: [*]) where
+  shrinkGrid :: Proxy cs -> Grid as x -> Grid bs x
+
+-- | There is a fine line between type level programing and the necronomicon
+instance ( KnownNat (CoordSized b)
+         , KnownNat (CoordSized (CoordFromNat a c))
+         , CoordSized (CoordFromNat a c) <= CoordSized a
+         , CoordSized b <= CoordSized
+            (CoordFromNat a (CoordSized a - CoordSized (CoordFromNat a c)))
+         ) =>
+         ShrinkableGrid (c ': '[]) (a ': '[]) (b ': '[]) where
+    shrinkGrid ::
+           forall x.
+           ( KnownNat (CoordSized b)
+           , KnownNat (CoordSized (CoordFromNat a c))
+           , CoordSized (CoordFromNat a c) <= CoordSized a
+           , CoordSized b <= CoordSized
+                (CoordFromNat a (CoordSized a - CoordSized (CoordFromNat a c)))
+           )
+        => Proxy (c ': '[])
+        -> Grid (a ': '[]) x
+        -> Grid (b ': '[]) x
+    shrinkGrid _ g =
+        let (_ :: Grid '[ CoordFromNat a c] x
+              , x :: Grid '[ CoordFromNat a
+                  (CoordSized a - CoordSized (CoordFromNat a c))] x) =
+                splitHigherDim g
+            (y :: Grid '[ b] x, _) = splitHigherDim x
+         in y
+
+instance ShrinkableGrid '[] '[] '[] where
+  shrinkGrid _ g = g

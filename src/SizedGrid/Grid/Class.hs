@@ -22,7 +22,6 @@ import           Data.Semigroup         hiding (All (..))
 #endif
 
 import           Generics.SOP
-import qualified GHC.TypeLits           as GHC
 
 -- | Conversion between `Grid` and `FocusedGrid` and access grids at a `Coord`
 class IsGrid cs grid | grid -> cs where
@@ -33,7 +32,7 @@ class IsGrid cs grid | grid -> cs where
   -- | Convert to, or run a function over, a `FocusedGrid`
   asFocusedGrid :: Lens' (grid a) (FocusedGrid cs a)
 
-instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
+instance (AllSizedKnown cs, All IsCoord cs) =>
          IsGrid cs (Grid cs) where
     gridIndex coord =
         lens
@@ -43,7 +42,7 @@ instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
     asFocusedGrid =
         lens (\g -> FocusedGrid g zeroCoord) (\_ fg -> focusedGrid fg)
 
-instance (GHC.KnownNat (MaxCoordSize cs), All IsCoord cs) =>
+instance (AllSizedKnown cs, All IsCoord cs) =>
          IsGrid cs (FocusedGrid cs) where
     gridIndex c =
         (\f (FocusedGrid g p) -> (\g' -> FocusedGrid g' p) <$> f g) .
