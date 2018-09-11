@@ -101,7 +101,7 @@ applyRule ::
        , All AffineSpace cs
        , All Eq cs
        , AllDiffSame Integer cs
-       , KnownNat (MaxCoordSize cs)
+       , AllSizedKnown cs
        , IsGrid cs (grid cs)
        )
     => Rule

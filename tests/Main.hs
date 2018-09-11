@@ -54,12 +54,12 @@ gridTests ::
        ( Show (Coord cs)
        , Eq (Coord cs)
        , All IsCoord cs
-       , GHC.KnownNat (MaxCoordSize cs)
+       , AllSizedKnown cs
        , Show a
        , Eq a
-       , AllGridSizeKnown cs
        , cs ~ '[x,y]
-       , GHC.KnownNat (MaxCoordSize '[y,x])
+       , KnownNat (CoordSized y * CoordSized x)
+       , KnownNat (CoordSized x * CoordSized y)
        )
     => Gen (Coord cs)
     -> Gen a
@@ -102,6 +102,7 @@ splitTests ::
        , KnownNat (CoordSized (CoordFromNat c 2) * MaxCoordSize cs)
        , CanDivide (CoordSized c) (CoordSized (CoordFromNat c 2))
        , KnownNat (CoordSized (CoordFromNat c 2))
+       , AllSizedKnown cs
        )
     => Proxy (c ': cs)
     -> Gen a
