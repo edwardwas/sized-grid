@@ -30,7 +30,6 @@ import           Data.Distributive
 import           Data.Functor.Classes
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
-import           Data.Type.Equality
 import qualified Data.Vector           as V
 import           Generics.SOP
 import qualified GHC.Generics          as GHC
@@ -240,7 +239,7 @@ instance ( KnownNat (CoordSized b)
          , AllSizedKnown as
          , IsCoord a
          , ShrinkableGrid as bs
-         , b ~ CoordFromNat a (CoordSized b)
+         , CoordFromNat b ~ CoordFromNat a
          , CoordSized b <= CoordSized a
          ) =>
          ShrinkableGrid (a ': as) (b ': bs) where
@@ -250,9 +249,9 @@ instance ( KnownNat (CoordSized b)
         helper :: Grid '[ a] x -> Grid '[ b] x
         helper g =
             asSizeProxy c $ \(pTake :: Proxy n) ->
-                case coordFromNatCollapse @a @(CoordSized a - n) @(CoordSized b) of
-                    Refl ->
-                        takeGrid (Proxy :: Proxy (CoordSized b)) $
-                        dropGrid pTake g
-    shrinkGrid _ = error "Unreachable pattern in shrinkGrid"
+                withDict
+                    (coordFromNatCollapse @a @(CoordSized a - n) @(CoordSized b))
+                    (takeGrid (Proxy :: Proxy (CoordSized b)) (dropGrid pTake g) \\
+                     coordFromNatSame @b @a)
+    shrinkGrid _ = error "Impossible pattern in shrinkGrid"
 

@@ -30,7 +30,6 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.List             (intercalate)
 import           Data.Semigroup        (Semigroup (..))
-import           Data.Type.Equality
 import qualified Data.Vector           as V
 import           Generics.SOP          hiding (Generic, S, Z)
 import qualified Generics.SOP          as SOP
@@ -302,5 +301,9 @@ instance (KnownNat (CoordSized a), AllSizedKnown as) =>
 
 -- | Proof an idiom about how `CoordFromNat` works. This relies on 'CoordFromNat a (CoordSized a ~ a'
 coordFromNatCollapse ::
-       forall a x y. CoordFromNat (CoordFromNat a x) y :~: CoordFromNat a y
-coordFromNatCollapse = unsafeCoerce Refl
+       forall a x y. Dict (CoordFromNat (CoordFromNat a x) y ~ CoordFromNat a y)
+coordFromNatCollapse = unsafeCoerce (Dict :: Dict (z ~ z))
+
+coordFromNatSame ::
+       (CoordFromNat a ~ CoordFromNat b) :- (a ~ CoordFromNat b (CoordSized a))
+coordFromNatSame = Sub (unsafeCoerce (Dict :: Dict (a ~ a)))
