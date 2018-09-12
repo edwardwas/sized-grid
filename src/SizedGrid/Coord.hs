@@ -30,6 +30,7 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.List             (intercalate)
 import           Data.Semigroup        (Semigroup (..))
+import           Data.Type.Equality
 import qualified Data.Vector           as V
 import           Generics.SOP          hiding (Generic, S, Z)
 import qualified Generics.SOP          as SOP
@@ -38,6 +39,7 @@ import           GHC.Generics          (Generic)
 import           GHC.TypeLits
 import qualified GHC.TypeLits          as GHC
 import           System.Random         (Random (..))
+import           Unsafe.Coerce         (unsafeCoerce)
 
 -- | Length of a type level list
 type family Length cs where
@@ -54,6 +56,9 @@ coordSplit (Coord (I x :* xs)) = (x, Coord xs)
 pattern (:|) :: c -> Coord cs -> Coord (c ': cs)
 pattern (:|) a as <- (coordSplit -> (a,as))
   where (:|) a (Coord as) = Coord (I a :* as)
+
+pattern EmptyCoord :: Coord '[]
+pattern EmptyCoord = Coord Nil
 
 infixr 5 :|
 
@@ -294,3 +299,8 @@ instance (KnownNat (CoordSized a), AllSizedKnown as) =>
         withDict
             (sizeProof @as)
             (Dict \\ (timesNat @(CoordSized a) @(MaxCoordSize as)))
+
+-- | Proof an idiom about how `CoordFromNat` works. This relies on 'CoordFromNat a (CoordSized a ~ a'
+coordFromNatCollapse ::
+       forall a x y. CoordFromNat (CoordFromNat a x) y :~: CoordFromNat a y
+coordFromNatCollapse = unsafeCoerce Refl

@@ -11,6 +11,7 @@ module Main where
 
 import           SizedGrid
 
+import           Test.Shrink
 import           Test.Utils
 
 import           Control.Lens        hiding (index)
@@ -269,4 +270,5 @@ main =
                   (splitTests
                        (Proxy :: Proxy '[ HardWrap 8, HardWrap 3, HardWrap 5])
                        (Gen.int $ Range.linear 0 100))
+            , shrinkTests
             ]

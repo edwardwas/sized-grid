@@ -31,7 +31,7 @@ library
         SizedGrid.Grid.Focused
         SizedGrid
     build-depends:
-        base >=4.9 && <4.12,
+        base >=4.9 && <4.13,
         lens >=4.16.1 && <4.17,
         vector >=0.12.0.1 && <0.13,
         vector-space ==0.13.*,
@@ -53,7 +53,7 @@ test-suite  tests
     type: exitcode-stdio-1.0
     main-is: Main.hs
     build-depends:
-        base >=4.9 && <4.12,
+        base >=4.9 && <4.13,
         sized-grid -any,
         hedgehog >=0.5.3 && <0.7,
         tasty >=1.0.1.1 && <1.2,
@@ -76,7 +76,7 @@ test-suite  readme
     type: exitcode-stdio-1.0
     main-is: README.lhs
     build-depends:
-        base >=4.9 && <4.12,
+        base >=4.9 && <4.13,
         markdown-unlit >=0.5.0 && <0.6,
         sized-grid -any,
         distributive >=0.5.3 && <0.6,

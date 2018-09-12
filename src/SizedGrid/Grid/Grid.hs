@@ -30,6 +30,7 @@ import           Data.Distributive
 import           Data.Functor.Classes
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
+import           Data.Type.Equality
 import qualified Data.Vector           as V
 import           Generics.SOP
 import qualified GHC.Generics          as GHC
@@ -159,16 +160,19 @@ transposeGrid ::
 transposeGrid g = tabulate $ \i -> index g $ tranposeCoord i
 
 splitGrid ::
-       forall c cs a. (GHC.KnownNat (MaxCoordSize cs))
+       forall c cs a. (AllSizedKnown cs)
     => Grid (c ': cs) a
     -> Grid '[ c] (Grid cs a)
 splitGrid (Grid v) =
-    Grid $
-    V.fromList $
-    map Grid
-        (splitVectorBySize
-             (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
-             v)
+    withDict
+        (sizeProof @cs)
+        (Grid $
+         V.fromList $
+         map
+             Grid
+             (splitVectorBySize
+                  (fromIntegral $ GHC.natVal (Proxy :: Proxy (MaxCoordSize cs)))
+                  v))
 
 combineGrid :: Grid '[c] (Grid cs a) -> Grid (c ': cs) a
 combineGrid (Grid v) = Grid (v >>= unGrid)
@@ -180,6 +184,17 @@ combineHigherDim ::
     -> Grid (b ': as) x
     -> Grid (c ': as) x
 combineHigherDim (Grid v1) (Grid v2) = Grid (v1 <> v2)
+
+dropGrid ::
+       KnownNat n
+    => Proxy n
+    -> Grid '[ c] x
+    -> Grid '[ CoordFromNat c (CoordSized c - n)] x
+dropGrid p (Grid v) = Grid $ V.drop (fromIntegral $ natVal p) v
+
+takeGrid :: KnownNat n => Proxy n -> Grid '[c] x -> Grid '[CoordFromNat c n] x
+takeGrid p (Grid v) = Grid $ V.take (fromIntegral $ natVal p) v
+
 
 splitHigherDim ::
        forall a b c as x.
@@ -215,35 +230,28 @@ mapLowerDim f (Grid v) =
              (fromIntegral (GHC.natVal (Proxy @(MaxCoordSize as))))
              v)
 
-class ShrinkableGrid (cs :: [GHC.Nat]) (as :: [*]) (bs :: [*]) where
-  shrinkGrid :: Proxy cs -> Grid as x -> Grid bs x
+class ShrinkableGrid (as :: [*]) (bs :: [*]) where
+  shrinkGrid :: Coord as -> Grid as x -> Grid bs x
 
-instance ShrinkableGrid '[] '[] '[] where
+instance ShrinkableGrid '[] '[] where
   shrinkGrid _ (Grid v) = Grid v
 
-instance ( CoordSized (CoordFromNat a c) <= CoordSized a
-         , ShrinkableGrid cs as bs
+instance ( KnownNat (CoordSized b)
          , AllSizedKnown as
-         , KnownNat (CoordSized b)
-         , KnownNat (CoordSized (CoordFromNat a c))
-         , CoordSized b <=
-              CoordSized (CoordFromNat a (CoordSized a - (CoordSized (CoordFromNat a c))))
+         , IsCoord a
+         , ShrinkableGrid as bs
+         , b ~ CoordFromNat a (CoordSized b)
          ) =>
-         ShrinkableGrid (c ': cs) (a ': as) (b ': bs) where
-    shrinkGrid ::
-           forall x.
-           ( CoordSized (CoordFromNat a c) <= CoordSized a
-           , AllSizedKnown as
-           , KnownNat (CoordSized b)
-           , KnownNat (CoordSized (CoordFromNat a c))
-           , ShrinkableGrid cs as bs
-           , CoordSized b <=
-                CoordSized (CoordFromNat a (CoordSized a - (CoordSized (CoordFromNat a c))))
-           )
-        => Proxy (c ': cs)
-        -> Grid (a ': as) x
-        -> Grid (b ': bs) x
-    shrinkGrid _ g =
-        let (_ :: Grid (CoordFromNat a c ': as) x, b) = splitHigherDim g
-            (c, _) = splitHigherDim b
-         in runIdentity $ mapLowerDim (Identity . shrinkGrid (Proxy :: Proxy cs)) c
+         ShrinkableGrid (a ': as) (b ': bs) where
+    shrinkGrid (c :| cs) =
+        combineGrid . fmap (shrinkGrid cs) . helper . splitGrid
+      where
+        helper :: Grid '[ a] x -> Grid '[ b] x
+        helper g =
+            asSizeProxy c $ \(pTake :: Proxy n) ->
+                case coordFromNatCollapse @a @(CoordSized a - n) @(CoordSized b) of
+                    Refl ->
+                        takeGrid (Proxy :: Proxy (CoordSized b)) $
+                        dropGrid pTake g
+    shrinkGrid _ = error "Unreachable pattern in shrinkGrid"
+
