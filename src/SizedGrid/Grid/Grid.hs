@@ -229,20 +229,20 @@ mapLowerDim f (Grid v) =
              (fromIntegral (GHC.natVal (Proxy @(MaxCoordSize as))))
              v)
 
-class ShrinkableGrid (as :: [*]) (bs :: [*]) where
-  shrinkGrid :: Coord as -> Grid as x -> Grid bs x
+class ShrinkableGrid (cs :: [*]) (as :: [*]) (bs :: [*]) where
+  shrinkGrid :: Coord cs -> Grid as x -> Grid bs x
 
-instance ShrinkableGrid '[] '[] where
+instance ShrinkableGrid '[] '[] '[] where
   shrinkGrid _ (Grid v) = Grid v
 
 instance ( KnownNat (CoordSized b)
          , AllSizedKnown as
-         , IsCoord a
-         , ShrinkableGrid as bs
+         , IsCoord c
+         , ShrinkableGrid cs as bs
          , CoordFromNat b ~ CoordFromNat a
-         , CoordSized b <= CoordSized a
+         , CoordSized b <= (CoordSized a - CoordSized c + 1)
          ) =>
-         ShrinkableGrid (a ': as) (b ': bs) where
+         ShrinkableGrid (c ': cs) (a ': as) (b ': bs) where
     shrinkGrid (c :| cs) =
         combineGrid . fmap (shrinkGrid cs) . helper . splitGrid
       where
