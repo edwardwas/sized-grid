@@ -241,6 +241,7 @@ instance ( KnownNat (CoordSized b)
          , IsCoord a
          , ShrinkableGrid as bs
          , b ~ CoordFromNat a (CoordSized b)
+         , CoordSized b <= CoordSized a
          ) =>
          ShrinkableGrid (a ': as) (b ': bs) where
     shrinkGrid (c :| cs) =
