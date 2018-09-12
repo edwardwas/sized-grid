@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -38,7 +39,6 @@ import           GHC.Generics          (Generic)
 import           GHC.TypeLits
 import qualified GHC.TypeLits          as GHC
 import           System.Random         (Random (..))
-import           Unsafe.Coerce         (unsafeCoerce)
 
 -- | Length of a type level list
 type family Length cs where
@@ -299,11 +299,36 @@ instance (KnownNat (CoordSized a), AllSizedKnown as) =>
             (sizeProof @as)
             (Dict \\ (timesNat @(CoordSized a) @(MaxCoordSize as)))
 
--- | Proof an idiom about how `CoordFromNat` works. This relies on 'CoordFromNat a (CoordSized a ~ a'
-coordFromNatCollapse ::
-       forall a x y. Dict (CoordFromNat (CoordFromNat a x) y ~ CoordFromNat a y)
-coordFromNatCollapse = unsafeCoerce (Dict :: Dict (z ~ z))
+class WeakenCoord as bs where
+  weakenCoord :: Coord as -> Maybe (Coord bs)
 
-coordFromNatSame ::
-       (CoordFromNat a ~ CoordFromNat b) :- (a ~ CoordFromNat b (CoordSized a))
-coordFromNatSame = Sub (unsafeCoerce (Dict :: Dict (a ~ a)))
+instance WeakenCoord '[] '[] where
+  weakenCoord c = Just c
+
+instance ( b ~ CoordFromNat a n
+         , WeakenCoord as bs
+         , IsCoord a
+         , IsCoord (CoordFromNat a n)
+         ) =>
+         WeakenCoord (a ': as) (b ': bs) where
+  weakenCoord (a :| as) = do
+    bs <- weakenCoord as
+    b <- weakenIsCoord a
+    return (b :| bs)
+  weakenCoord _ = error "Unreachable pattern in weakenCoord"
+
+class StrengthenCoord as bs where
+  strengthenCoord :: Coord as -> Coord bs
+
+instance StrengthenCoord '[] '[] where
+  strengthenCoord c = c
+
+instance ( StrengthenCoord as bs
+         , IsCoord (CoordFromNat a n)
+         , IsCoord a
+         , b ~ CoordFromNat a n
+         , CoordSized a <= CoordSized (CoordFromNat a n)
+         ) =>
+         StrengthenCoord (a ': as) (b ': bs) where
+  strengthenCoord (a :| as) = strengthenIsCoord a :| strengthenCoord as
+  strengthenCoord _         = error "Unreachable pattern in strengthenCoord"

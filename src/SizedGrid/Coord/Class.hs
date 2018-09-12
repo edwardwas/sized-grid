@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DefaultSignatures   #-}
 {-# LANGUAGE FlexibleContexts    #-}
@@ -14,8 +15,22 @@ module SizedGrid.Coord.Class where
 import           SizedGrid.Ordinal
 
 import           Control.Lens
+import           Data.Constraint
 import           Data.Proxy
 import           GHC.TypeLits
+import           Unsafe.Coerce     (unsafeCoerce)
+
+-- | Proof an idiom about how `CoordFromNat` works. This relies on 'CoordFromNat a (CoordSized a ~ a'
+coordFromNatCollapse ::
+       forall a x y. Dict (CoordFromNat (CoordFromNat a x) y ~ CoordFromNat a y)
+coordFromNatCollapse = unsafeCoerce (Dict :: Dict (z ~ z))
+
+coordFromNatSame ::
+       (CoordFromNat a ~ CoordFromNat b) :- (a ~ CoordFromNat b (CoordSized a))
+coordFromNatSame = Sub (unsafeCoerce (Dict :: Dict (a ~ a)))
+
+coordSizedCollapse :: forall c n . Dict (CoordSized (CoordFromNat c n) ~ n)
+coordSizedCollapse = unsafeCoerce (Dict :: Dict (a ~ a))
 
 -- | Everything that can be uses as a Coordinate. The only required function is `asOrdinal` and the type instance of `CoordSized`: the rest can be derived automatically.
 --
@@ -43,6 +58,15 @@ class (1 <= CoordSized c, KnownNat (CoordSized c))  => IsCoord c where
                         Proxy n -> x)
       -> x
   asSizeProxy c = asSizeProxy (view asOrdinal c)
+
+  weakenIsCoord :: IsCoord (CoordFromNat c n) => c -> Maybe (CoordFromNat c n)
+  weakenIsCoord = fmap (review asOrdinal) . weakenOrdinal . view asOrdinal
+
+  strengthenIsCoord ::
+       (IsCoord (CoordFromNat c n), CoordSized c <= CoordSized (CoordFromNat c n))
+    => c
+    -> CoordFromNat c n
+  strengthenIsCoord = review asOrdinal . strengthenOrdinal . view asOrdinal
 
 instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
     type CoordSized (Ordinal n) = n
