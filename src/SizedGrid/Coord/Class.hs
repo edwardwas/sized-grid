@@ -16,6 +16,7 @@ import           SizedGrid.Ordinal
 
 import           Control.Lens
 import           Data.Constraint
+import           Data.Maybe        (fromJust)
 import           Data.Proxy
 import           GHC.TypeLits
 import           Unsafe.Coerce     (unsafeCoerce)
@@ -52,6 +53,9 @@ class (1 <= CoordSized c, KnownNat (CoordSized c))  => IsCoord c where
   maxCoordSize :: proxy c -> Integer
   maxCoordSize p = natVal (sCoordSized p) - 1
 
+  maxCoord :: c
+  maxCoord = view (re asOrdinal) maxCoord
+
   asSizeProxy ::
          c
       -> (forall n. (KnownNat n, n + 1 <= (CoordSized c)) =>
@@ -74,6 +78,7 @@ instance (1 <= n, KnownNat n) => IsCoord (Ordinal n) where
     asOrdinal = id
     zeroPosition = Ordinal (Proxy @0)
     asSizeProxy (Ordinal p) func = func p
+    maxCoord = fromJust $ numToOrdinal (maxCoordSize (Proxy :: Proxy (Ordinal n)))
 
 -- | Enumerate all possible values of a coord, in order
 allCoordLike :: IsCoord c => [c]

@@ -183,4 +183,5 @@ isCoordLaws p =
             (ordinalToNum $ view asOrdinal (zeroPosition @a))
         assertEqual "Size Proxy Zero"
             (0 :: Integer) (asSizeProxy (zeroPosition @a) natVal)
+        assertEqual "Max size equality" (ordinalToNum $ view asOrdinal (maxCoord @ a)) (maxCoordSize p)
 
