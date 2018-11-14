@@ -30,6 +30,7 @@ import           Data.Distributive
 import           Data.Functor.Classes
 import           Data.Functor.Rep
 import           Data.Proxy            (Proxy (..))
+import           Data.Semigroup        ((<>))
 import qualified Data.Vector           as V
 import           Generics.SOP
 import qualified GHC.Generics          as GHC
