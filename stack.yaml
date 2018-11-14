@@ -3,5 +3,6 @@ packages:
 - .
 extra-deps:
 - hedgehog-fn-0.6
+- tasty-hedgehog-0.2.0.0
 resolver: lts-12.9
 allow-newer: true
