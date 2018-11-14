@@ -19,6 +19,10 @@ extra-source-files:
     README.lhs
     README.md
 
+source-repository head
+  type: git
+  location: https://github.com/edwardwas/sized-grid
+
 library
     exposed-modules:
         SizedGrid.Ordinal
@@ -32,17 +36,17 @@ library
         SizedGrid
     build-depends:
         base >=4.9 && <4.13,
-        lens >=4.16.1 && <4.17,
-        vector >=0.12.0.1 && <0.13,
-        vector-space ==0.13.*,
-        generics-sop >=0.3.2.0 && <0.4,
-        distributive >=0.5.3 && <0.6,
-        adjunctions ==4.4.*,
-        comonad >=5.0.3 && <5.1,
-        random ==1.1.*,
+        adjunctions >= 4.3 && < 4.5,
+        aeson >=1.2 && <1.5,
+        comonad >=5.0 && <5.1,
+        constraints >= 0.9 && < 0.11,
+        distributive >=0.5 && <0.6,
+        generics-sop >=0.3 && <0.4,
+        lens >=4.15 && <4.17,
         mtl >=2.2.2 && <2.3,
-        constraints ==0.10.*,
-        aeson >=1.2.4.0 && <1.5
+        random ==1.1.*,
+        vector >=0.12 && <0.13,
+        vector-space >=0.10 && < 0.14
     default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
@@ -54,19 +58,19 @@ test-suite  tests
     main-is: Main.hs
     build-depends:
         base >=4.9 && <4.13,
-        sized-grid -any,
-        hedgehog >=0.5.3 && <0.7,
-        tasty >=1.0.1.1 && <1.2,
-        tasty-hedgehog >=0.1.0.2 && <0.3,
-        vector-space ==0.13.*,
-        generics-sop >=0.3.2.0 && <0.4,
-        lens >=4.16.1 && <4.17,
-        adjunctions ==4.4.*,
-        aeson >=1.2.4.0 && <1.5,
         HUnit >=1.6.0.0 && <1.7,
-        tasty-hunit >=0.10.0.1 && <0.11,
-        vector >=0.12.0.1 && <0.13,
-        hedgehog-fn >= 0.6 && < 0.7
+        aeson >=1.2 && <1.5,
+        adjunctions >= 4.3 && < 4.5,
+        generics-sop >=0.3 && <0.4,
+        hedgehog >=0.5 && <0.7,
+        hedgehog-fn >= 0.6 && < 0.7,
+        lens >=4.15 && <4.17,
+        sized-grid -any,
+        tasty >=1.0 && <1.2,
+        tasty-hedgehog >=0.1&& <0.3,
+        tasty-hunit >=0.10 && <0.11,
+        vector >=0.12 && <0.13,
+        vector-space >=0.10 && < 0.14
     default-language: Haskell2010
     hs-source-dirs: tests
     other-modules:
@@ -77,13 +81,13 @@ test-suite  readme
     main-is: README.lhs
     build-depends:
         base >=4.9 && <4.13,
+        ansi-terminal >=0.8.0.2 && <0.9,
+        adjunctions >= 4.3 && < 4.5,
+        comonad >=5.0 && <5.1,
+        distributive >=0.5 && <0.6,
+        lens >=4.15 && <4.17,
         markdown-unlit >=0.5.0 && <0.6,
         sized-grid -any,
-        distributive >=0.5.3 && <0.6,
-        adjunctions ==4.4.*,
-        vector-space ==0.13.*,
-        comonad >=5.0.3 && <5.1,
-        lens >=4.16.1 && <4.17,
-        ansi-terminal >=0.8.0.2 && <0.9
+        vector-space >=0.10 && < 0.14
     default-language: Haskell2010
     ghc-options: -pgmL markdown-unlit
