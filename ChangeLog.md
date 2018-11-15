@@ -1,6 +1,6 @@
 # Revision history for sized-grid
 
-## 0.1.1.3 -- 2018-11-14
+## 0.1.1.2 -- 2018-11-14
 
 * Version bumps
 
