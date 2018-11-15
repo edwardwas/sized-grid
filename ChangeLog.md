@@ -1,5 +1,9 @@
 # Revision history for sized-grid
 
+## 0.1.1.3 -- 2018-11-14
+
+* Version bumps
+
 ## 0.1.1.0 -- 2018-05-10
 
 * Added Field instances for coord
