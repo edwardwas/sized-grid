@@ -1,9 +1,5 @@
 flags: {}
 packages:
 - .
-extra-deps:
-- tasty-hedgehog-0.2.0.0
-- git: https://github.com/qfpl/hedgehog-fn
-  commit: 4ed56a664d164537b8dc8fa36cd4b1b843a4a586
 resolver: lts-12.9
 allow-newer: true
