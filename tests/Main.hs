@@ -24,10 +24,12 @@ import           Generics.SOP          hiding (S, Z)
 import qualified GHC.Generics          as GHC
 import           GHC.TypeLits
 import qualified GHC.TypeLits          as GHC
-import           Test.QuickCheck
+import           Test.QuickCheck       (Arbitrary (..), Arbitrary1 (..),
+                                        Property, oneof, property, (.&&.),
+                                        (===))
 import           Test.Tasty
 import           Test.Tasty.HUnit
-import           Test.Tasty.QuickCheck
+import           Test.Tasty.QuickCheck (testProperty)
 
 instance (1 <= n, KnownNat n) => Arbitrary (Periodic n) where
   arbitrary = Periodic <$> oneof (map pure [minBound .. maxBound])
