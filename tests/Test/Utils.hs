@@ -126,15 +126,35 @@ applicativeLaws _ _ =
       identiy = do
         v :: f a <- liftArbitrary arbitrary
         return (v === (pure id <*> v))
-      homomorphism :: Gen Property
       homomorphism = do
         x :: a <- arbitrary
         f :: (a -> a) <- applyFun <$> arbitrary
         return ((pure f <*> pure x) === pure @f (f x))
+      interchange :: Gen Property
+      interchange = do
+        u :: f (a -> a) <- liftArbitrary (applyFun <$> arbitrary)
+        y :: a <- arbitrary
+        let lhs :: f a = u <*> pure y
+            rhs :: f a = pure ($ y) <*> u
+        return (lhs === rhs)
+      fmapLaw = do
+        f :: (a -> a) <- applyFun <$> arbitrary
+        x :: f a <- liftArbitrary arbitrary
+        return ((f <$> x) === (pure f <*> x))
+      composition = do
+        u :: f (a -> a) <- liftArbitrary (applyFun <$> arbitrary)
+        v :: f (a -> a) <- liftArbitrary (applyFun <$> arbitrary)
+        w :: f a <- liftArbitrary arbitrary
+        let lhs = u <*> (v <*> w)
+            rhs = pure (.) <*> u <*> v <*> w
+        return (lhs === rhs)
   in testGroup
        "Applicative Laws"
        [ testProperty "Identity" (property identiy)
        , testProperty "Homomorphism" (property homomorphism)
+       , testProperty "Interchange" (property interchange)
+       , testProperty "Fmap Law" (property fmapLaw)
+       , testProperty "Composiiton" (property composition)
        ]
 
 traversalLaws ::
