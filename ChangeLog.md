@@ -1,6 +1,10 @@
 # Revision history for sized-grid
 
-## 0.1.1.2 -- 2018-11-14
+## 0.1.1.4 -- 2018-11-20
+
+* Changed test suite to use QuickCheck
+
+## 0.1.1.3 -- 2018-11-14
 
 * Version bumps
 

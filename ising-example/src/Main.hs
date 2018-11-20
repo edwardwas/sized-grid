@@ -68,7 +68,7 @@ type GridType = '[Periodic 60, Periodic 60]
 gridSize = GHC.natVal (Proxy :: Proxy (MaxCoordSize GridType))
 
 randomGrid ::
-     (GHC.KnownNat (MaxCoordSize cs), MonadRandom m)
+     (GHC.KnownNat (MaxCoordSize cs), MonadRandom m, AllSizedKnown cs)
   => m (Grid cs Spin)
 randomGrid = sequence $ pure $ getRandom
 
