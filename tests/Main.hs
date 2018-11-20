@@ -68,8 +68,8 @@ gridTests ::
        , Show a
        , Eq a
        , cs ~ '[ x, y]
-       , KnownNat (CoordSized y * CoordSized x)
-       , KnownNat (CoordSized x * CoordSized y)
+       , KnownNat (CoordSized y GHC.* CoordSized x)
+       , KnownNat (CoordSized x GHC.* CoordSized y)
        , Arbitrary a
        , Arbitrary x
        , Arbitrary y
@@ -108,12 +108,12 @@ splitTests ::
        , Eq a
        , Num a
        , All IsCoord (c ': cs)
-       , KnownNat (CoordSized c * MaxCoordSize cs)
+       , KnownNat (CoordSized c GHC.* MaxCoordSize cs)
        , KnownNat (MaxCoordSize cs)
-       , KnownNat (5 * MaxCoordSize cs)
-       , KnownNat (3 * MaxCoordSize cs)
-       , KnownNat (2 * MaxCoordSize cs)
-       , KnownNat (CoordSized (CoordFromNat c 2) * MaxCoordSize cs)
+       , KnownNat (5 GHC.* MaxCoordSize cs)
+       , KnownNat (3 GHC.* MaxCoordSize cs)
+       , KnownNat (2 GHC.* MaxCoordSize cs)
+       , KnownNat (CoordSized (CoordFromNat c 2) GHC.* MaxCoordSize cs)
        , KnownNat (CoordSized (CoordFromNat c 2))
        , AllSizedKnown cs
        , Arbitrary a

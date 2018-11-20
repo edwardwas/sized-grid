@@ -26,6 +26,7 @@ import           Data.AffineSpace
 import           Data.Semigroup                     (Semigroup (..))
 import           Generics.SOP                       hiding (S, Z)
 import           GHC.TypeLits
+import qualified GHC.TypeLits as GHC
 import           Graphics.Gloss.Interface.Pure.Game
 
 data TileState
@@ -57,6 +58,7 @@ applyRule ::
        , Length cs ~ n
        , All AffineSpace cs
        , KnownNat (MaxCoordSize cs)
+       , AllSizedKnown cs
        )
     => Rule n
     -> FocusedGrid cs TileState
@@ -129,7 +131,7 @@ updateWorld :: forall x y .
        , Monoid y
        , Show x
        , Show y
-       , KnownNat ((*) (CoordSized x) (CoordSized y))
+       , KnownNat ((GHC.*) (CoordSized x) (CoordSized y))
        )
     => DisplayInfo
     -> Event
@@ -150,6 +152,7 @@ tickWorld ::
        , AllDiffSame Integer cs
        , All AffineSpace cs
        , KnownNat (MaxCoordSize cs)
+       , AllSizedKnown cs
        )
     => Float
     -> WorldState cs

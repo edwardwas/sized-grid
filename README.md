@@ -69,6 +69,7 @@ import Data.Distributive
 import Data.Functor.Rep
 import Data.Semigroup (Semigroup(..))
 import GHC.TypeLits
+import qualified GHC.TypeLits as GHC
 import System.Console.ANSI
 ```
 
@@ -129,7 +130,7 @@ Let's create a glider, and watch it move!
 
 ```haskell
 glider :: 
-      ( KnownNat (CoordSized x * CoordSized y)
+      ( KnownNat (CoordSized x GHC.* CoordSized y)
       , Semigroup x
       , Semigroup y
       , Monoid x
