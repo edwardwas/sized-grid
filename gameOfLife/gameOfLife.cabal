@@ -3,8 +3,8 @@
 
 name:                gameOfLife
 version:             0.1.0.0
--- synopsis:            
--- description:         
+synopsis:            Game of Life Example
+description:         A game of life example for SizedG
 license:             MIT
 license-file:        LICENSE
 author:              edwardwas
