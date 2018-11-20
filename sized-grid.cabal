@@ -68,13 +68,14 @@ test-suite  tests
         tasty-hunit >=0.10 && <0.11,
         vector >=0.12 && <0.13,
         vector-space >=0.10 && < 0.14,
-        QuickCheck,
-        tasty-quickcheck
+        QuickCheck >= 2.7 && < 3.0,
+        tasty-quickcheck >= 0.9 && < 1
     default-language: Haskell2010
     hs-source-dirs: tests
     other-modules:
         Test.Utils
         Test.Shrink
+
 test-suite  readme
     type: exitcode-stdio-1.0
     main-is: README.lhs

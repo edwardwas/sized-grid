@@ -169,20 +169,25 @@ traversalLaws t =
        [testProperty "Pure Id" pureId, testProperty "Compose" compose]
 
 isCoordLaws ::
-       forall a. (IsCoord a)
-    => Proxy a
-    -> TestTree
+     forall a. (IsCoord a)
+  => Proxy a
+  -> TestTree
 isCoordLaws p =
-    testCase "IsCoord Laws" $ do
-        assertEqual
-            "Max coord size is sCoordSized"
-            (maxCoordSize p)
-            (natVal (sCoordSized p) - 1)
-        assertEqual
-            "zeroPosition is Zero"
-            (0 :: Int)
-            (ordinalToNum $ view asOrdinal (zeroPosition @a))
-        assertEqual "Size Proxy Zero"
-            (0 :: Integer) (asSizeProxy (zeroPosition @a) natVal)
-        assertEqual "Max size equality" (ordinalToNum $ view asOrdinal (maxCoord @ a)) (maxCoordSize p)
+  testCase "IsCoord Laws" $ do
+    assertEqual
+      "Max coord size is sCoordSized"
+      (maxCoordSize p)
+      (natVal (sCoordSized p) - 1)
+    assertEqual
+      "zeroPosition is Zero"
+      (0 :: Int)
+      (ordinalToNum $ view asOrdinal (zeroPosition @a))
+    assertEqual
+      "Size Proxy Zero"
+      (0 :: Integer)
+      (asSizeProxy (zeroPosition @a) natVal)
+    assertEqual
+      "Max size equality"
+      (ordinalToNum $ view asOrdinal (maxCoord @a))
+      (maxCoordSize p)
 
