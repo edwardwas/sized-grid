@@ -1,5 +1,5 @@
 name: sized-grid
-version: 0.1.1.3
+version: 0.1.1.4
 cabal-version: >=1.10
 category: Data
 build-type: Simple
