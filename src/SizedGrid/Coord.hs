@@ -61,8 +61,8 @@ pattern EmptyCoord = Coord Nil
 
 infixr 5 :|
 
-_WrappedCoord :: Lens' (Coord cs) (NP I cs)
-_WrappedCoord f (Coord n) = Coord <$> f n
+_WrappedCoord :: Iso' (Coord cs) (NP I cs)
+_WrappedCoord = dimap unCoord (fmap Coord)
 
 instance All Eq cs => Eq (Coord cs) where
     Coord a == Coord b =
