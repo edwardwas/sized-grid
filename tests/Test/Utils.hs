@@ -109,10 +109,8 @@ affineSpaceLaws _ =
 applicativeLaws ::
      forall f a.
      ( Applicative f
-     , Traversable f
      , Show (f a)
      , Eq (f a)
-     , Show a
      , Arbitrary a
      , Arbitrary1 f
      , Function a

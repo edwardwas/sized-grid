@@ -1,5 +1,5 @@
 name: sized-grid
-version: 0.1.1.6
+version: 0.1.1.7
 cabal-version: >=1.10
 category: Data
 build-type: Simple
@@ -64,7 +64,7 @@ test-suite  tests
         generics-sop >=0.3 && <0.5,
         lens >=4.15 && <5,
         sized-grid -any,
-        tasty >=1.0 && <1.2,
+        tasty >=1.0 && <2.1,
         tasty-hunit >=0.10 && <0.11,
         vector >=0.12 && <0.13,
         vector-space >=0.10 && < 2,
