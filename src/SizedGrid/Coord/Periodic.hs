@@ -50,10 +50,8 @@ instance (1 <= n, KnownNat n) => Enum (Periodic n) where
         (fromIntegral x) `mod` (maxCoordSize (Proxy @(Periodic n)))
     fromEnum (Periodic o) = ordinalToNum o
 
-instance (1 <= n, KnownNat n) => IsCoord (Periodic n) where
-    type CoordSized (Periodic n) = n
-    type CoordFromNat (Periodic n) = Periodic
-    asOrdinal = iso unPeriodic Periodic
+instance IsCoord Periodic where
+  asOrdinal = iso unPeriodic Periodic
 
 instance (1 <= n, KnownNat n) => Semigroup (Periodic n) where
     Periodic a <> Periodic b =

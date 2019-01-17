@@ -96,7 +96,7 @@ We can then write a function to apply this to every point in a grid.
 
 ```haskell
 applyRule :: 
-       ( All IsCoord cs
+       ( All IsCoordLifted cs
        , All Monoid cs
        , All Semigroup cs
        , All AffineSpace cs
@@ -121,8 +121,8 @@ displayTileState :: TileState -> Char
 displayTileState Alive = '#'
 displayTileState Dead = '.'
 
-displayGrid :: (KnownNat (CoordSized x), KnownNat (CoordSized y)) => 
-      Grid '[x, y] TileState -> String
+displayGrid :: (KnownNat (x GHC.* y), KnownNat x, KnownNat y) => 
+      Grid '[f x, g y] TileState -> String
 displayGrid = unlines . collapseGrid . fmap displayTileState
 ```
 
@@ -130,13 +130,13 @@ Let's create a glider, and watch it move!
 
 ```haskell
 glider :: 
-      ( KnownNat (CoordSized x GHC.* CoordSized y)
+      ( KnownNat (CoordNat x GHC.* CoordNat y)
       , Semigroup x
       , Semigroup y
       , Monoid x
       , Monoid y
-      , IsCoord x
-      , IsCoord y
+      , IsCoordLifted x
+      , IsCoordLifted y
       , AffineSpace x
       , AffineSpace y
       , Diff x ~ Integer

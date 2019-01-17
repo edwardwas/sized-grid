@@ -36,10 +36,8 @@ deriving instance KnownNat n => FromJSON (HardWrap n)
 deriving instance KnownNat n => ToJSONKey (HardWrap n)
 deriving instance KnownNat n => FromJSONKey (HardWrap n)
 
-instance (1 <= n, KnownNat n) => IsCoord (HardWrap n) where
-    type CoordSized (HardWrap n) = n
-    type CoordFromNat (HardWrap n) = HardWrap
-    asOrdinal = iso unHardWrap HardWrap
+instance IsCoord HardWrap where
+  asOrdinal = iso unHardWrap HardWrap
 
 instance (1 <= n, KnownNat n) => Semigroup (HardWrap n) where
     HardWrap a <> HardWrap b =

@@ -206,30 +206,37 @@ instance ( All AffineSpace cs
 
 -- | Generate all possible coords in order
 allCoord ::
-       forall cs. (All IsCoord cs)
+       forall cs. (All IsCoordLifted cs)
     => [Coord cs]
-allCoord = Coord <$> hsequence (hcpure (Proxy :: Proxy IsCoord) allCoordLike)
+allCoord =
+    Coord <$>
+    hsequence
+        (hcpure (Proxy :: Proxy IsCoordLifted) (allCoordLike))
 
 -- | The number of elements a coord can have. This is equal to the product of the `CoordSized` of each element
 type family MaxCoordSize (cs :: [k]) :: GHC.Nat where
   MaxCoordSize '[] = 1
-  MaxCoordSize (c ': cs) = (CoordSized c) GHC.* (MaxCoordSize cs)
+  MaxCoordSize ((c n) ': cs) = n GHC.* (MaxCoordSize cs)
 
 -- | Convert a `Coord` to its position in a vector
-coordPosition :: (All IsCoord cs) => Coord cs -> Int
+coordPosition :: (All IsCoordLifted cs) => Coord cs -> Int
 coordPosition (Coord a) =
-    let helper :: (All IsCoord xs) => NP I xs -> Integer
+    let helper :: (All IsCoordLifted xs) => NP I xs -> Integer
         helper Nil = 0
         helper (I c :* (cs :: NP I ys)) =
             ordinalToNum (c ^. asOrdinal) * sizeOfList cs + helper cs
-        sizeOfList :: All IsCoord xs => NP I xs -> Integer
+        sizeOfList :: All IsCoordLifted xs => NP I xs -> Integer
         sizeOfList =
             product .
             hcollapse .
             hcmap
-                (Proxy :: Proxy IsCoord)
-                (\(I (_ :: a)) -> K $ 1 + maxCoordSize (Proxy :: Proxy a))
-    in fromIntegral $ helper a
+                (Proxy :: Proxy IsCoordLifted)
+                (\(I (_ :: a)) ->
+                     K $
+                     1 +
+                     maxCoordSize
+                         (Proxy :: Proxy ((CoordContainer a) (CoordNat a))))
+     in fromIntegral $ helper a
 
 -- | All Diffs of the members of the list must be equal
 type family AllDiffSame a xs :: Constraint where
@@ -283,8 +290,8 @@ tranposeCoord :: Coord '[a,b] -> Coord '[b,a]
 tranposeCoord (Coord (a :* b :* Nil)) = Coord (b :* a :* Nil)
 
 -- | The zero position for a coord
-zeroCoord :: All IsCoord cs => Coord cs
-zeroCoord = Coord $ hcpure (Proxy :: Proxy IsCoord) (I $ zeroPosition)
+zeroCoord :: All IsCoordLifted cs => Coord cs
+zeroCoord = Coord $ hcpure (Proxy :: Proxy IsCoordLifted) (I $ zeroPosition)
 
 class AllSizedKnown (cs :: [*]) where
   sizeProof :: Dict (KnownNat (MaxCoordSize cs))
@@ -292,12 +299,12 @@ class AllSizedKnown (cs :: [*]) where
 instance AllSizedKnown '[] where
     sizeProof = Dict
 
-instance (KnownNat (CoordSized a), AllSizedKnown as) =>
-         AllSizedKnown (a ': as) where
+instance (KnownNat n, AllSizedKnown as) =>
+         AllSizedKnown ((c n) ': as) where
     sizeProof =
         withDict
             (sizeProof @as)
-            (Dict \\ (timesNat @(CoordSized a) @(MaxCoordSize as)))
+            (Dict \\ (timesNat @n @(MaxCoordSize as)))
 
 class WeakenCoord as bs where
   weakenCoord :: Coord as -> Maybe (Coord bs)
@@ -305,17 +312,13 @@ class WeakenCoord as bs where
 instance WeakenCoord '[] '[] where
   weakenCoord c = Just c
 
-instance ( b ~ CoordFromNat a n
-         , WeakenCoord as bs
-         , IsCoord a
-         , IsCoord (CoordFromNat a n)
-         ) =>
-         WeakenCoord (a ': as) (b ': bs) where
-  weakenCoord (a :| as) = do
-    bs <- weakenCoord as
-    b <- weakenIsCoord a
-    return (b :| bs)
-  weakenCoord _ = error "Unreachable pattern in weakenCoord"
+instance (WeakenCoord as bs, IsCoord c, KnownNat m) =>
+         WeakenCoord ((c n) ': as) ((c m) ': bs) where
+    weakenCoord (a :| as) = do
+        bs <- weakenCoord as
+        b <- weakenIsCoord a
+        return (b :| bs)
+    weakenCoord _ = error "Unreachable pattern in weakenCoord"
 
 class StrengthenCoord as bs where
   strengthenCoord :: Coord as -> Coord bs
@@ -324,11 +327,10 @@ instance StrengthenCoord '[] '[] where
   strengthenCoord c = c
 
 instance ( StrengthenCoord as bs
-         , IsCoord (CoordFromNat a n)
-         , IsCoord a
-         , b ~ CoordFromNat a n
-         , CoordSized a <= CoordSized (CoordFromNat a n)
+         , IsCoord c
+         , n <= m
+         , KnownNat m
          ) =>
-         StrengthenCoord (a ': as) (b ': bs) where
+         StrengthenCoord ((c n) ': as) ((c m) ': bs) where
   strengthenCoord (a :| as) = strengthenIsCoord a :| strengthenCoord as
   strengthenCoord _         = error "Unreachable pattern in strengthenCoord"

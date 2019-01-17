@@ -25,7 +25,7 @@ data FocusedGrid cs a = FocusedGrid
     } deriving (Functor,Foldable,Traversable)
 
 instance ( AllSizedKnown cs
-         , All IsCoord cs
+         , All IsCoordLifted cs
          , All Monoid cs
          , All Semigroup cs
          , SListI cs
@@ -35,7 +35,7 @@ instance ( AllSizedKnown cs
     duplicate (FocusedGrid g p) = FocusedGrid (tabulate (FocusedGrid g)) p
 
 instance ( AllSizedKnown cs
-         , All IsCoord cs
+         , All IsCoordLifted cs
          , All Monoid cs
          , All Semigroup cs
          , SListI cs

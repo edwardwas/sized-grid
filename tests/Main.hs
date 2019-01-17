@@ -53,26 +53,26 @@ assertOrderd =
      in assertBool "Ordered" . helper
 
 testAllCoordOrdered ::
-       forall cs proxy. (All Eq cs, All Ord cs, All IsCoord cs)
+       forall cs proxy. (All Eq cs, All Ord cs, All IsCoordLifted cs)
     => proxy (Coord cs)
     -> TestTree
 testAllCoordOrdered _ =
     testCase "allCoord is ordered" $ assertOrderd (allCoord @cs)
 
 gridTests ::
-       forall cs a x y.
+       forall cs a x y f g.
        ( Show (Coord cs)
        , Eq (Coord cs)
-       , All IsCoord cs
+       , All IsCoordLifted cs
        , AllSizedKnown cs
        , Show a
        , Eq a
-       , cs ~ '[ x, y]
-       , KnownNat (CoordSized y GHC.* CoordSized x)
-       , KnownNat (CoordSized x GHC.* CoordSized y)
+       , cs ~ '[ f x, g y]
+       , KnownNat (y GHC.* x)
+       , KnownNat (x GHC.* y)
        , Arbitrary a
-       , Arbitrary x
-       , Arbitrary y
+       , Arbitrary (f x)
+       , Arbitrary (g y)
        )
     => Proxy (Coord cs)
     -> Proxy a
@@ -88,8 +88,8 @@ gridTests genC genA =
       uncollapseCollapse =
         property $ do
           cg :: [[a]] <-
-            replicateM (fromIntegral $ natVal (Proxy @(CoordSized x))) $
-            replicateM (fromIntegral $ natVal (Proxy @(CoordSized y))) $
+            replicateM (fromIntegral $ natVal (Proxy @x)) $
+            replicateM (fromIntegral $ natVal (Proxy @y)) $
             arbitrary
           return (Just cg === (collapseGrid <$> gridFromList @cs cg))
       doubleTranspose =
@@ -103,32 +103,32 @@ gridTests genC genA =
      ]
 
 splitTests ::
-       forall c cs a.
+       forall c x cs a.
        ( Show a
        , Eq a
        , Num a
-       , All IsCoord (c ': cs)
-       , KnownNat (CoordSized c GHC.* MaxCoordSize cs)
+       , All IsCoordLifted ((c x) ': cs)
+       , KnownNat (x GHC.* MaxCoordSize cs)
        , KnownNat (MaxCoordSize cs)
        , KnownNat (5 GHC.* MaxCoordSize cs)
        , KnownNat (3 GHC.* MaxCoordSize cs)
        , KnownNat (2 GHC.* MaxCoordSize cs)
-       , KnownNat (CoordSized (CoordFromNat c 2) GHC.* MaxCoordSize cs)
-       , KnownNat (CoordSized (CoordFromNat c 2))
+       , KnownNat (2 GHC.* MaxCoordSize cs)
+       , KnownNat 2
        , AllSizedKnown cs
        , Arbitrary a
        )
-    => Proxy (c ': cs)
+    => Proxy ((c x) ': cs)
     -> Proxy a
     -> [TestTree]
 splitTests _ _ =
   let splitAndCombine =
         property $ do
-          g :: Grid (c ': cs) a <- sequenceA $ pure arbitrary
+          g :: Grid ((c x) ': cs) a <- sequenceA $ pure arbitrary
           return (g === combineGrid (splitGrid g))
       combineAndSplit =
         property $ do
-          g :: Grid '[ c] (Grid cs a) <-
+          g :: Grid '[ c x] (Grid cs a) <-
             sequenceA $ pure (sequenceA $ pure arbitrary)
           return (g === splitGrid (combineGrid g))
       higherSplitAndCombine =

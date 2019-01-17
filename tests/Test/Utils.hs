@@ -1,9 +1,12 @@
 {-# LANGUAGE CPP                 #-}
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Test.Utils where
 
@@ -187,25 +190,25 @@ traversalLaws t =
        [testProperty "Pure Id" pureId, testProperty "Compose" compose]
 
 isCoordLaws ::
-     forall a. (IsCoord a)
-  => Proxy a
+     forall c n. (IsCoord c, 1 <= n, KnownNat n)
+  => Proxy (c n)
   -> TestTree
 isCoordLaws p =
   testCase "IsCoord Laws" $ do
     assertEqual
       "Max coord size is sCoordSized"
-      (maxCoordSize p)
+      (maxCoordSize (Proxy :: Proxy (c n)))
       (natVal (sCoordSized p) - 1)
     assertEqual
       "zeroPosition is Zero"
       (0 :: Int)
-      (ordinalToNum $ view asOrdinal (zeroPosition @a))
+      (ordinalToNum $ view asOrdinal (zeroPosition @c @n))
     assertEqual
       "Size Proxy Zero"
       (0 :: Integer)
-      (asSizeProxy (zeroPosition @a) natVal)
+      (asSizeProxy (zeroPosition @c @n) natVal)
     assertEqual
       "Max size equality"
-      (ordinalToNum $ view asOrdinal (maxCoord @a))
+      (ordinalToNum $ view (asOrdinal @c) (maxCoord (Proxy @n)))
       (maxCoordSize p)
 
