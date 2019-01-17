@@ -1,6 +1,12 @@
 # Revision history for sized-grid
 
-## 0.1.1.5 -- 2018-11-21
+## 0.2.0.0 -- NOT PUBLISHED
+
+* _WrappedCoord is now an Iso
+
+* IsCoord is now of kind Nat -> *. Introduced IsCoordLifted. This is unfortunatly a breaking change
+
+## 0.1.1.6 -- 2018-11-21
 
 * Reduced bound on generics-sop
 
